@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useNavigate, Outlet } from "react-router-dom";
 import { UserProfile } from "@/types";
@@ -82,7 +81,6 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ user }) => {
     { title: "Job Listings", icon: Building2, url: "/jobs" },
   ];
 
-  // Select menu items based on user role
   const menuItems = () => {
     if (!user) return candidateMenuItems;
     switch (user.role) {
@@ -195,10 +193,11 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ user }) => {
                       <SidebarMenuItem key={item.title}>
                         <SidebarMenuButton 
                           asChild 
-                          className="flex items-center gap-3"
-                          onClick={() => navigate(item.url)}
                         >
-                          <button>
+                          <button 
+                            className="flex items-center gap-3"
+                            onClick={() => navigate(item.url)}
+                          >
                             <item.icon className="h-5 w-5" />
                             <span>{item.title}</span>
                           </button>
