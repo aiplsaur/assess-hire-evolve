@@ -1,73 +1,204 @@
-# Welcome to your Lovable project
 
-## Project info
+# InterviewPro - Advanced Interview Assessment Management System
 
-**URL**: https://lovable.dev/projects/261b1c6e-5d61-489a-8aaf-ab37bea5c45d
+InterviewPro is a comprehensive platform for managing the entire hiring process, from job postings to final candidate selection.
 
-## How can I edit this code?
+## Table of Contents
 
-There are several ways of editing your application.
+- [Overview](#overview)
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Database Schema](#database-schema)
+- [Authentication and Access Control](#authentication-and-access-control)
+- [API Design](#api-design)
+- [Edge Functions](#edge-functions)
+- [Getting Started](#getting-started)
+- [Deployment](#deployment)
 
-**Use Lovable**
+## Overview
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/261b1c6e-5d61-489a-8aaf-ab37bea5c45d) and start prompting.
+InterviewPro streamlines the recruitment workflow with skill-based assessments, automated scoring, and intelligent candidate ranking. It supports role-based access for Administrators, HR Managers, Interviewers, and Candidates.
 
-Changes made via Lovable will be committed automatically to this repo.
+## Features
 
-**Use your preferred IDE**
+### Role-Based Access
+- **Admin**: Complete system access, user management, reporting
+- **HR**: Job posting creation, candidate management, interview scheduling
+- **Interviewer**: View assigned interviews, provide structured feedback
+- **Candidate**: Apply to jobs, take assessments, view application status
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Job Management
+- Create and publish job postings
+- Track application status
+- Generate shareable job links
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Candidate Assessment
+- Multiple assessment types:
+  - Multiple-choice questions (MCQs)
+  - Coding challenges
+  - Text-based responses
+- Automated scoring with AI evaluation
+- Custom assessment generation
 
-Follow these steps:
+### Interview Management
+- Interview scheduling with calendar integration
+- Video conference links
+- Structured feedback forms
+- Candidate scoring
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### Automated Ranking
+- Algorithmic candidate ranking
+- Customizable evaluation criteria
+- Comparison views
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### Analytics and Reporting
+- Hiring funnel metrics
+- Time-to-hire tracking
+- Assessment performance analytics
 
-# Step 3: Install the necessary dependencies.
-npm i
+## Tech Stack
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+### Frontend
+- **React**: UI library
+- **TypeScript**: Type-safe JavaScript
+- **TailwindCSS**: Utility-first CSS framework
+- **shadcn/ui**: Component library
+- **React Query**: Data fetching and state management
+- **React Router**: Routing
+
+### Backend
+- **Supabase**: Backend-as-a-Service
+  - Authentication
+  - Database
+  - Storage
+  - Realtime
+  - Edge Functions
+
+## Project Structure
+
+```
+src/
+├── components/         # Reusable UI components
+│   ├── ui/             # shadcn UI components
+│   ├── dashboard/      # Dashboard specific components
+│   ├── jobs/           # Job management components
+│   ├── assessments/    # Assessment components 
+│   └── ...
+├── context/            # React context providers
+├── hooks/              # Custom React hooks
+├── pages/              # Application pages
+│   ├── auth/           # Authentication pages
+│   ├── dashboard/      # Dashboard pages
+│   ├── jobs/           # Job management pages
+│   ├── candidates/     # Candidate management pages
+│   └── ...
+├── services/           # API services
+├── types/              # TypeScript type definitions
+├── lib/                # Utility functions
+└── ...
+```
+
+## Database Schema
+
+The application uses the following tables in Supabase:
+
+1. **profiles**: User profiles with role information
+2. **jobs**: Job postings
+3. **applications**: Job applications from candidates
+4. **assessments**: Assessment templates
+5. **mcq_questions**: Multiple-choice questions
+6. **coding_questions**: Coding challenges
+7. **text_questions**: Text-based questions
+8. **assessment_assignments**: Assigned assessments to candidates
+9. **mcq_responses**: Candidate responses to MCQs
+10. **coding_responses**: Candidate responses to coding challenges
+11. **text_responses**: Candidate responses to text questions
+12. **interviews**: Scheduled interviews
+13. **feedback_criteria**: Evaluation criteria for interviews
+14. **interview_feedback**: Interviewer feedback
+15. **notifications**: User notifications
+
+## Authentication and Access Control
+
+The application uses Supabase Authentication for user management and Row-Level Security (RLS) policies for data access control.
+
+### RLS Policies
+
+- **Profiles**: Users can read all profiles but only edit their own
+- **Jobs**: 
+  - Admin/HR can create, read, update, and delete jobs
+  - Interviewers can read jobs
+  - Candidates can read published jobs
+- **Applications**:
+  - Admin/HR can read all applications
+  - Interviewers can read applications for interviews they're assigned to
+  - Candidates can read their own applications
+- **Assessments**:
+  - Admin/HR/Interviewers can create and read assessments
+  - Candidates can read assessments assigned to them
+
+## API Design
+
+The application uses Supabase's client library for CRUD operations and Supabase Realtime for live updates.
+
+### Key API Endpoints
+
+- **/auth**: Authentication endpoints
+- **/jobs**: Job management
+- **/applications**: Application management
+- **/assessments**: Assessment management
+- **/interviews**: Interview scheduling
+- **/feedback**: Interview feedback
+
+## Edge Functions
+
+Supabase Edge Functions are used for serverless operations:
+
+1. **sendEmail**: Email notifications
+2. **generateAssessment**: AI-powered assessment generation
+3. **evaluateTextResponse**: AI evaluation of text responses
+4. **scheduleSuggestion**: Intelligent interview scheduling
+5. **rankCandidates**: Algorithmic candidate ranking
+6. **webhookHandler**: Integration with external services
+
+## Getting Started
+
+1. **Clone the repository**
+```bash
+git clone <repository-url>
+cd interview-pro
+```
+
+2. **Install dependencies**
+```bash
+npm install
+```
+
+3. **Set up Supabase**
+   - Create a Supabase project
+   - Execute SQL setup scripts
+   - Configure environment variables
+
+4. **Run the development server**
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## Deployment
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+1. **Build the application**
+```bash
+npm run build
+```
 
-**Use GitHub Codespaces**
+2. **Deploy the frontend**
+   - Deploy the built application to a hosting service
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+3. **Configure Supabase**
+   - Set up production environment
+   - Configure security settings
 
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/261b1c6e-5d61-489a-8aaf-ab37bea5c45d) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes it is!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+4. **Connect domain and SSL**
+   - Configure custom domain
+   - Set up SSL certificates
