@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { UserProfile, UserRole } from "@/types";
 import { toast } from "@/hooks/use-toast";
 
@@ -18,6 +18,7 @@ interface AuthContextType {
   ) => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  hasRole: (roles: UserRole[] | "all") => boolean;
 }
 
 // Create the context with a default value
@@ -41,6 +42,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Initialize and check for existing session
   useEffect(() => {
@@ -48,7 +50,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       try {
         // This will be replaced with Supabase session check
         // For now, we'll simulate a logged-in user for demonstration
-        setUser(mockUser);
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          setUser(JSON.parse(storedUser));
+        } else {
+          // For demo purposes, automatically log in as admin
+          // In a real app, this would be removed
+          setUser(mockUser);
+          localStorage.setItem('user', JSON.stringify(mockUser));
+        }
       } catch (error) {
         console.error("Error checking authentication status:", error);
         setUser(null);
@@ -66,17 +76,52 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setLoading(true);
       // This will be replaced with Supabase auth.signIn
       
-      // For demonstration, we'll simulate a successful login with the mock user
-      setUser(mockUser);
+      // For demonstration, we'll simulate a successful login with different user roles
+      let loggedInUser: UserProfile;
+      
+      if (email.includes('admin')) {
+        loggedInUser = { ...mockUser, role: 'admin' };
+      } else if (email.includes('hr')) {
+        loggedInUser = { 
+          ...mockUser, 
+          id: "2", 
+          email: email, 
+          firstName: "HR", 
+          lastName: "Manager", 
+          role: 'hr' 
+        };
+      } else if (email.includes('interviewer')) {
+        loggedInUser = { 
+          ...mockUser, 
+          id: "3", 
+          email: email, 
+          firstName: "Technical", 
+          lastName: "Interviewer", 
+          role: 'interviewer' 
+        };
+      } else {
+        loggedInUser = { 
+          ...mockUser, 
+          id: "4", 
+          email: email, 
+          firstName: "Job", 
+          lastName: "Seeker", 
+          role: 'candidate' 
+        };
+      }
+      
+      setUser(loggedInUser);
+      localStorage.setItem('user', JSON.stringify(loggedInUser));
       
       // Show success toast
       toast({
         title: "Signed in successfully",
-        description: `Welcome back, ${mockUser.firstName}!`,
+        description: `Welcome back, ${loggedInUser.firstName}!`,
       });
       
-      // Redirect to dashboard
-      navigate("/dashboard");
+      // Redirect to dashboard or the page they were trying to access
+      const from = location.state?.from || "/dashboard";
+      navigate(from);
     } catch (error) {
       console.error("Error signing in:", error);
       toast({
@@ -114,6 +159,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       };
       
       setUser(newUser);
+      localStorage.setItem('user', JSON.stringify(newUser));
       
       // Show success toast
       toast({
@@ -142,8 +188,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setLoading(true);
       // This will be replaced with Supabase auth.signOut
       
-      // Clear user state
+      // Clear user state and local storage
       setUser(null);
+      localStorage.removeItem('user');
       
       // Show success toast
       toast({
@@ -190,6 +237,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  // Function to check if user has required roles
+  const hasRole = (roles: UserRole[] | "all"): boolean => {
+    if (!user) return false;
+    if (roles === "all") return true;
+    return roles.includes(user.role);
+  };
+
   const value = {
     user,
     loading,
@@ -197,6 +251,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     signUp,
     signOut,
     resetPassword,
+    hasRole,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

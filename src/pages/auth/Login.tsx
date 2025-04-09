@@ -3,7 +3,7 @@ import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +18,13 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { 
+  AlertTriangle,
+  BadgeInfo,
+  CircleUser,
+  HelpingHand,
+  UserCog 
+} from "lucide-react";
 
 // Define form schema using zod
 const loginSchema = z.object({
@@ -30,6 +37,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 const Login: React.FC = () => {
   const { signIn, loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
 
   // Initialize form with react-hook-form
@@ -37,7 +45,7 @@ const Login: React.FC = () => {
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: "",
-      password: "",
+      password: "password123", // For demo purposes
     },
   });
 
@@ -50,6 +58,13 @@ const Login: React.FC = () => {
       console.error("Login error:", error);
       // Auth context handles error toast
     }
+  };
+
+  // Demo login functions for different roles
+  const loginAsRole = (role: string) => {
+    const email = `${role}@interviewpro.com`;
+    form.setValue("email", email);
+    form.handleSubmit(onSubmit)();
   };
 
   return (
@@ -102,6 +117,63 @@ const Login: React.FC = () => {
             >
               Forgot password?
             </Link>
+          </div>
+
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white dark:bg-system-gray-900 text-muted-foreground">Demo Logins</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 mt-4">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => loginAsRole("admin")}
+                className="flex items-center justify-center gap-2"
+              >
+                <UserCog className="h-4 w-4" />
+                <span>Admin</span>
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => loginAsRole("hr")}
+                className="flex items-center justify-center gap-2"
+              >
+                <HelpingHand className="h-4 w-4" />
+                <span>HR Manager</span>
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => loginAsRole("interviewer")}
+                className="flex items-center justify-center gap-2"
+              >
+                <BadgeInfo className="h-4 w-4" />
+                <span>Interviewer</span>
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => loginAsRole("candidate")}
+                className="flex items-center justify-center gap-2"
+              >
+                <CircleUser className="h-4 w-4" />
+                <span>Candidate</span>
+              </Button>
+            </div>
+
+            <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-md flex items-start gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" />
+              <p className="text-xs text-amber-800">
+                This is a demo application. All authentication is simulated. Any password will work with the demo emails.
+              </p>
+            </div>
           </div>
         </CardContent>
         <Separator />

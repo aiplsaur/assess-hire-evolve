@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import { MainLayout } from "@/components/layout/MainLayout";
+import { RoleBasedGuard } from "@/components/auth/RoleBasedGuard";
 
 // Auth Pages
 import Login from "./pages/auth/Login";
@@ -21,6 +22,7 @@ import Assessments from "./pages/assessments/Assessments";
 import Interviews from "./pages/interviews/Interviews";
 import Reports from "./pages/reports/Reports";
 import Settings from "./pages/settings/Settings";
+import Applications from "./pages/applications/Applications";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -41,14 +43,53 @@ const App = () => (
             
             {/* Protected Routes */}
             <Route path="/" element={<MainLayout />}>
-              <Route path="dashboard" element={<Dashboard />} />
-              <Route path="jobs" element={<Jobs />} />
-              <Route path="candidates" element={<Candidates />} />
-              <Route path="assessments" element={<Assessments />} />
-              <Route path="interviews" element={<Interviews />} />
-              <Route path="reports" element={<Reports />} />
-              <Route path="settings" element={<Settings />} />
-              {/* Add other protected routes here */}
+              {/* All authenticated users */}
+              <Route path="dashboard" element={
+                <RoleBasedGuard allowedRoles="all">
+                  <Dashboard />
+                </RoleBasedGuard>
+              } />
+              
+              {/* Routes for job seekers (candidates) */}
+              <Route path="applications" element={
+                <RoleBasedGuard allowedRoles={["candidate"]}>
+                  <Applications />
+                </RoleBasedGuard>
+              } />
+              <Route path="jobs" element={
+                <RoleBasedGuard allowedRoles={["candidate", "hr", "admin"]}>
+                  <Jobs />
+                </RoleBasedGuard>
+              } />
+              
+              {/* Routes for hiring team */}
+              <Route path="candidates" element={
+                <RoleBasedGuard allowedRoles={["hr", "admin"]}>
+                  <Candidates />
+                </RoleBasedGuard>
+              } />
+              <Route path="assessments" element={
+                <RoleBasedGuard allowedRoles={["interviewer", "admin"]}>
+                  <Assessments />
+                </RoleBasedGuard>
+              } />
+              <Route path="interviews" element={
+                <RoleBasedGuard allowedRoles={["interviewer", "hr", "admin"]}>
+                  <Interviews />
+                </RoleBasedGuard>
+              } />
+              
+              {/* Admin only routes */}
+              <Route path="reports" element={
+                <RoleBasedGuard allowedRoles={["admin"]}>
+                  <Reports />
+                </RoleBasedGuard>
+              } />
+              <Route path="settings" element={
+                <RoleBasedGuard allowedRoles={["admin"]}>
+                  <Settings />
+                </RoleBasedGuard>
+              } />
             </Route>
             
             {/* 404 Route */}
