@@ -15,6 +15,12 @@ import ForgotPassword from "./pages/auth/ForgotPassword";
 // Main Pages
 import Index from "./pages/Index";
 import Dashboard from "./pages/dashboard/Dashboard";
+import Jobs from "./pages/jobs/Jobs";
+import Candidates from "./pages/candidates/Candidates";
+import Assessments from "./pages/assessments/Assessments";
+import Interviews from "./pages/interviews/Interviews";
+import Reports from "./pages/reports/Reports";
+import Settings from "./pages/settings/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +42,12 @@ const App = () => (
             {/* Protected Routes */}
             <Route path="/" element={<MainLayout />}>
               <Route path="dashboard" element={<Dashboard />} />
+              <Route path="jobs" element={<Jobs />} />
+              <Route path="candidates" element={<Candidates />} />
+              <Route path="assessments" element={<Assessments />} />
+              <Route path="interviews" element={<Interviews />} />
+              <Route path="reports" element={<Reports />} />
+              <Route path="settings" element={<Settings />} />
               {/* Add other protected routes here */}
             </Route>
             
