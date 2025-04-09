@@ -84,11 +84,9 @@ export const SidebarContentComponent: React.FC<SidebarContentProps> = ({ user })
             <SidebarMenu>
               {menuItems().map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    asChild 
-                  >
+                  <SidebarMenuButton>
                     <button 
-                      className="flex items-center gap-3"
+                      className="flex items-center gap-3 w-full"
                       onClick={() => navigate(item.url)}
                     >
                       <item.icon className="h-5 w-5" />

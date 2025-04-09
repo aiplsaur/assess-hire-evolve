@@ -18,7 +18,7 @@ export const Header: React.FC<HeaderProps> = ({ user }) => {
   return (
     <header className="h-16 bg-white dark:bg-system-gray-800 shadow-sm z-10 flex items-center px-4 justify-between">
       <div className="flex items-center">
-        <SidebarTrigger asChild>
+        <SidebarTrigger>
           <Button variant="ghost" size="icon">
             <Menu className="h-5 w-5" />
           </Button>
