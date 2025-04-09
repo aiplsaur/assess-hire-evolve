@@ -1,19 +1,16 @@
 
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { UserProfile } from "@/types";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Menu } from "lucide-react";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { UserMenu } from "./UserMenu";
+import { useAuth } from "@/context/AuthContext";
 
-interface HeaderProps {
-  user?: UserProfile;
-}
-
-export const Header: React.FC<HeaderProps> = ({ user }) => {
+export const Header: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   return (
     <header className="h-16 bg-white dark:bg-system-gray-800 shadow-sm z-10 flex items-center px-4 justify-between">

@@ -1,7 +1,6 @@
 
 import React from "react";
 import { Outlet } from "react-router-dom";
-import { UserProfile } from "@/types";
 import {
   SidebarProvider,
   Sidebar,
@@ -10,16 +9,15 @@ import {
 } from "@/components/ui/sidebar";
 import { Header } from "./Header";
 import { SidebarContentComponent, SidebarHeader as SidebarHeaderContent, SidebarFooterContent } from "./SidebarContent";
+import { useAuth } from "@/context/AuthContext";
 
-interface MainLayoutProps {
-  user?: UserProfile;
-}
-
-export const MainLayout: React.FC<MainLayoutProps> = ({ user }) => {
+export const MainLayout: React.FC = () => {
+  const { user } = useAuth();
+  
   return (
     <SidebarProvider>
       <div className="min-h-screen flex flex-col w-full bg-system-gray-100 dark:bg-system-gray-800">
-        <Header user={user} />
+        <Header />
         <div className="flex flex-1">
           <Sidebar className="border-r border-system-gray-200 dark:border-system-gray-700 bg-white dark:bg-system-gray-800">
             <SidebarHeader className="p-4">
