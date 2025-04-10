@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { UserProfile, UserRole } from "@/types";
-import { authService } from "@/services/authService";
+import { authService } from "@/services/authService.js";
 
 // Define the shape of our authentication context
 interface AuthContextType {
@@ -81,11 +81,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setLoading(true);
       
       // Use authService to sign up
-      const newUser = await authService.signUp(email, password, firstName, lastName, role);
-      setUser(newUser);
+      const result = await authService.signUp(email, password, firstName, lastName, role);
+      
+      if (!result.success) {
+        throw new Error(result.error || "Signup failed");
+      }
+      
+      if (result.requiresConfirmation) {
+        // Don't redirect, let the user know they need to confirm their email
+        return { requiresConfirmation: true };
+      }
+      
+      if (result.incomplete) {
+        // Profile creation failed but account was created
+        // We can either redirect to complete profile or let them try again later
+        return { incomplete: true };
+      }
+      
+      // Set the user in context
+      setUser(result.user);
       
       // Redirect to dashboard
       navigate("/dashboard");
+      
+      return result;
     } catch (error) {
       console.error("Error signing up:", error);
       throw error;

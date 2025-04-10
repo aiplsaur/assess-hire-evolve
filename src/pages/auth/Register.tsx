@@ -1,5 +1,4 @@
-
-import React from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -25,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { UserRole } from "@/types";
+import { MailCheck, AlertCircle } from "lucide-react";
 
 // Define form schema using zod
 const registerSchema = z.object({
@@ -43,6 +43,11 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 
 const Register: React.FC = () => {
   const { signUp, loading } = useAuth();
+  const [registrationState, setRegistrationState] = useState<{
+    requiresConfirmation?: boolean;
+    incomplete?: boolean;
+    error?: string;
+  }>({});
 
   // Initialize form with react-hook-form
   const form = useForm<RegisterFormValues>({
@@ -60,20 +65,91 @@ const Register: React.FC = () => {
   // Handle form submission
   const onSubmit = async (data: RegisterFormValues) => {
     try {
-      await signUp(
+      // Reset registration state before attempting registration
+      setRegistrationState({});
+      
+      const result = await signUp(
         data.email,
         data.password,
         data.firstName,
         data.lastName,
         data.role
       );
-      // Auth context handles redirect and toast
+      
+      // Handle different registration states
+      if (result?.requiresConfirmation) {
+        setRegistrationState({ requiresConfirmation: true });
+      } else if (result?.incomplete) {
+        setRegistrationState({ incomplete: true });
+      }
+      // Success without special states is handled by AuthContext (redirect)
     } catch (error) {
       console.error("Registration error:", error);
-      // Auth context handles error toast
+      setRegistrationState({ 
+        error: error instanceof Error ? error.message : "Registration failed" 
+      });
     }
   };
 
+  // Render confirmation message if email confirmation is required
+  if (registrationState.requiresConfirmation) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-system-blue-50 to-system-blue-100 dark:from-system-gray-900 dark:to-system-gray-800 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md animate-fade-in shadow-lg">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl font-bold text-center">Check Your Email</CardTitle>
+            <CardDescription className="text-center">
+              We've sent you a confirmation email. Please check your inbox and click the confirmation link to activate your account.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex justify-center">
+            <div className="p-4 rounded-full bg-system-blue-100">
+              <MailCheck className="h-12 w-12 text-system-blue-600" />
+            </div>
+          </CardContent>
+          <CardFooter className="flex flex-col space-y-4 p-6">
+            <Link 
+              to="/auth/login" 
+              className="w-full text-center text-system-blue-600 hover:text-system-blue-800 font-medium"
+            >
+              Back to Login
+            </Link>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
+
+  // Render incomplete registration message
+  if (registrationState.incomplete) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-system-blue-50 to-system-blue-100 dark:from-system-gray-900 dark:to-system-gray-800 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md animate-fade-in shadow-lg">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl font-bold text-center">Account Created</CardTitle>
+            <CardDescription className="text-center">
+              Your account was created but we encountered an issue setting up your profile. You can try signing in now.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex justify-center">
+            <div className="p-4 rounded-full bg-system-yellow-100">
+              <AlertCircle className="h-12 w-12 text-system-yellow-600" />
+            </div>
+          </CardContent>
+          <CardFooter className="flex flex-col space-y-4 p-6">
+            <Link 
+              to="/auth/login" 
+              className="w-full text-center text-system-blue-600 hover:text-system-blue-800 font-medium"
+            >
+              Go to Login
+            </Link>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
+
+  // Normal registration form
   return (
     <div className="min-h-screen bg-gradient-to-b from-system-blue-50 to-system-blue-100 dark:from-system-gray-900 dark:to-system-gray-800 flex items-center justify-center p-4">
       <Card className="w-full max-w-md animate-fade-in shadow-lg">

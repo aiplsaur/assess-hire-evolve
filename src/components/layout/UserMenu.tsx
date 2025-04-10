@@ -47,7 +47,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user }) => {
 
   return (
     <div className="flex items-center space-x-4">
-      <Button 
+      {/* <Button 
         variant="ghost" 
         size="sm" 
         onClick={handleLogout}
@@ -55,7 +55,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user }) => {
       >
         <LogOut className="h-4 w-4 mr-2" />
         Logout
-      </Button>
+      </Button> */}
       
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -80,10 +80,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user }) => {
             </div>
           </div>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => navigate("/profile")}>
+          {/* <DropdownMenuItem onClick={() => navigate("/profile")}>
             <User className="mr-2 h-4 w-4" />
             Profile
-          </DropdownMenuItem>
+          </DropdownMenuItem> */}
           <DropdownMenuItem onClick={() => navigate("/settings")}>
             <Settings className="mr-2 h-4 w-4" />
             Settings

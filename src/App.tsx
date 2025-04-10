@@ -86,7 +86,7 @@ const App = () => (
                 </RoleBasedGuard>
               } />
               <Route path="settings" element={
-                <RoleBasedGuard allowedRoles={["admin"]}>
+                <RoleBasedGuard allowedRoles="all">
                   <Settings />
                 </RoleBasedGuard>
               } />
