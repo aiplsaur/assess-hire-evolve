@@ -1,49 +1,81 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell } from "recharts";
 import { format, subMonths } from "date-fns";
+import { reportService } from "@/services";
+import { Spinner } from "@/components/ui/spinner";
+import { toast } from "@/hooks/use-toast";
+import { AlertCircle } from "lucide-react";
 
-// Mock data for reports
-const hiringOverviewData = [
-  { name: "Jan", applications: 45, interviews: 22, hires: 5 },
-  { name: "Feb", applications: 52, interviews: 30, hires: 8 },
-  { name: "Mar", applications: 61, interviews: 35, hires: 10 },
-  { name: "Apr", applications: 75, interviews: 42, hires: 12 },
-  { name: "May", applications: 80, interviews: 48, hires: 15 },
-  { name: "Jun", applications: 85, interviews: 52, hires: 18 },
-];
-
-const applicationSourceData = [
-  { name: "LinkedIn", value: 35 },
-  { name: "Company Website", value: 25 },
-  { name: "Indeed", value: 15 },
-  { name: "Referrals", value: 15 },
-  { name: "Other", value: 10 },
-];
-
+// Default colors for charts
 const colors = ["#3b82f6", "#10b981", "#f97316", "#8b5cf6", "#6b7280"];
-
-const timeToHireData = [
-  { department: "Engineering", days: 28 },
-  { department: "Design", days: 25 },
-  { department: "Marketing", days: 21 },
-  { department: "Sales", days: 18 },
-  { department: "Product", days: 32 },
-  { department: "HR", days: 15 },
-];
-
-const jobPositionData = [
-  { position: "Frontend Developer", open: 12, filled: 8 },
-  { position: "Backend Developer", open: 8, filled: 5 },
-  { position: "UX Designer", open: 6, filled: 3 },
-  { position: "Product Manager", open: 4, filled: 2 },
-  { position: "Marketing Specialist", open: 5, filled: 4 },
-];
 
 const Reports: React.FC = () => {
   const [timeRange, setTimeRange] = useState<"30" | "90" | "180" | "365">("180");
+  const [hiringData, setHiringData] = useState<any>({ monthlyData: [], totals: { applications: 0, interviews: 0, hires: 0 } });
+  const [sourceData, setSourceData] = useState<any>([]);
+  const [timeToHireData, setTimeToHireData] = useState<any>({ departmentData: [], overallAverage: 0 });
+  const [jobPositionsData, setJobPositionsData] = useState<any>({ positionData: [], totals: { open: 0, filled: 0 } });
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchReportData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Fetch all report data in parallel
+        const [hiringOverview, applicationSources, timeToHire, jobPositions] = await Promise.all([
+          reportService.getHiringOverview(timeRange),
+          reportService.getApplicationSources(timeRange),
+          reportService.getTimeToHire(timeRange),
+          reportService.getJobPositions()
+        ]);
+        
+        setHiringData(hiringOverview);
+        setSourceData(applicationSources);
+        setTimeToHireData(timeToHire);
+        setJobPositionsData(jobPositions);
+      } catch (err) {
+        console.error("Error fetching report data:", err);
+        setError("Failed to load report data. Please try again.");
+        toast({
+          title: "Error",
+          description: "Failed to load report data. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchReportData();
+  }, [timeRange]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-24">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24">
+        <AlertCircle className="h-12 w-12 text-system-red-500 mb-4" />
+        <h2 className="text-xl font-bold mb-2">Error Loading Reports</h2>
+        <p className="text-muted-foreground mb-6">{error}</p>
+      </div>
+    );
+  }
+
+  // Find the top source
+  const topSource = sourceData.length > 0 
+    ? `${sourceData[0].name} (${sourceData[0].value}%)`
+    : 'None';
 
   return (
     <div className="space-y-6">
@@ -88,7 +120,7 @@ const Reports: React.FC = () => {
                 <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
-                      data={hiringOverviewData}
+                      data={hiringData.monthlyData}
                       margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" />
@@ -105,15 +137,15 @@ const Reports: React.FC = () => {
                 <div className="mt-4 grid grid-cols-3 gap-2 text-center">
                   <div>
                     <p className="text-sm text-muted-foreground">Total Applications</p>
-                    <p className="text-2xl font-bold text-system-blue-600">398</p>
+                    <p className="text-2xl font-bold text-system-blue-600">{hiringData.totals.applications}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Total Interviews</p>
-                    <p className="text-2xl font-bold text-system-green-600">229</p>
+                    <p className="text-2xl font-bold text-system-green-600">{hiringData.totals.interviews}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Total Hires</p>
-                    <p className="text-2xl font-bold text-system-orange-500">68</p>
+                    <p className="text-2xl font-bold text-system-orange-500">{hiringData.totals.hires}</p>
                   </div>
                 </div>
               </CardContent>
@@ -128,7 +160,7 @@ const Reports: React.FC = () => {
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
-                        data={applicationSourceData}
+                        data={sourceData}
                         cx="50%"
                         cy="50%"
                         labelLine={false}
@@ -137,7 +169,7 @@ const Reports: React.FC = () => {
                         dataKey="value"
                         label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                       >
-                        {applicationSourceData.map((entry, index) => (
+                        {sourceData.map((entry: any, index: number) => (
                           <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
                         ))}
                       </Pie>
@@ -148,7 +180,7 @@ const Reports: React.FC = () => {
                 </div>
                 <div className="mt-4 text-center">
                   <p className="text-sm text-muted-foreground">Most Effective Source</p>
-                  <p className="text-lg font-bold">LinkedIn (35%)</p>
+                  <p className="text-lg font-bold">{topSource}</p>
                 </div>
               </CardContent>
             </Card>
@@ -163,7 +195,7 @@ const Reports: React.FC = () => {
                 <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
-                      data={timeToHireData}
+                      data={timeToHireData.departmentData}
                       layout="vertical"
                       margin={{ top: 20, right: 30, left: 70, bottom: 5 }}
                     >
@@ -177,7 +209,7 @@ const Reports: React.FC = () => {
                 </div>
                 <div className="mt-4 text-center">
                   <p className="text-sm text-muted-foreground">Overall Average</p>
-                  <p className="text-lg font-bold">23 days</p>
+                  <p className="text-lg font-bold">{timeToHireData.overallAverage} days</p>
                 </div>
               </CardContent>
             </Card>
@@ -190,7 +222,7 @@ const Reports: React.FC = () => {
                 <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
-                      data={jobPositionData}
+                      data={jobPositionsData.positionData}
                       margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" />
@@ -205,7 +237,7 @@ const Reports: React.FC = () => {
                 </div>
                 <div className="mt-4 text-center">
                   <p className="text-sm text-muted-foreground">Total Positions</p>
-                  <p className="text-lg font-bold">35 Open, 22 Filled</p>
+                  <p className="text-lg font-bold">{jobPositionsData.totals.open} Open, {jobPositionsData.totals.filled} Filled</p>
                 </div>
               </CardContent>
             </Card>
