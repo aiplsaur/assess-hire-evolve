@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -7,97 +6,37 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Filter, Mail, Phone, MapPin, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { format, addDays } from "date-fns";
+import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { ApplicationStatus } from "@/types";
+import { candidateService } from "@/services/candidateService";
+import { Spinner } from "@/components/ui/spinner";
+import { toast } from "@/components/ui/use-toast";
 
 interface Candidate {
   id: string;
-  name: string;
+  first_name: string;
+  last_name: string;
   email: string;
   phone: string;
   location: string;
-  avatar?: string;
-  status: ApplicationStatus;
-  appliedFor: string;
-  appliedAt: Date;
-  tags: string[];
+  avatar_url?: string;
+  applications: Application[];
+  created_at: string;
 }
 
-const mockCandidates: Candidate[] = [
-  {
-    id: "1",
-    name: "Alex Johnson",
-    email: "alex.johnson@example.com",
-    phone: "+1 (555) 123-4567",
-    location: "New York, NY",
-    avatar: "",
-    status: "screening",
-    appliedFor: "Senior Frontend Developer",
-    appliedAt: addDays(new Date(), -3),
-    tags: ["React", "TypeScript", "UI/UX"],
-  },
-  {
-    id: "2",
-    name: "Samantha Lee",
-    email: "samantha.lee@example.com",
-    phone: "+1 (555) 234-5678",
-    location: "San Francisco, CA",
-    avatar: "",
-    status: "assessment",
-    appliedFor: "Product Manager",
-    appliedAt: addDays(new Date(), -5),
-    tags: ["Product Strategy", "Agile", "User Research"],
-  },
-  {
-    id: "3",
-    name: "David Chen",
-    email: "david.chen@example.com",
-    phone: "+1 (555) 345-6789",
-    location: "Remote",
-    avatar: "",
-    status: "interview_scheduled",
-    appliedFor: "UI/UX Designer",
-    appliedAt: addDays(new Date(), -7),
-    tags: ["Figma", "User Testing", "Design Systems"],
-  },
-  {
-    id: "4",
-    name: "Emily Rodriguez",
-    email: "emily.rodriguez@example.com",
-    phone: "+1 (555) 456-7890",
-    location: "Chicago, IL",
-    avatar: "",
-    status: "applied",
-    appliedFor: "DevOps Engineer",
-    appliedAt: addDays(new Date(), -1),
-    tags: ["AWS", "Docker", "Kubernetes"],
-  },
-  {
-    id: "5",
-    name: "Michael Wilson",
-    email: "michael.wilson@example.com",
-    phone: "+1 (555) 567-8901",
-    location: "Boston, MA",
-    avatar: "",
-    status: "offered",
-    appliedFor: "Marketing Specialist",
-    appliedAt: addDays(new Date(), -14),
-    tags: ["Content Marketing", "SEO", "Social Media"],
-  },
-  {
-    id: "6",
-    name: "Jessica Taylor",
-    email: "jessica.taylor@example.com",
-    phone: "+1 (555) 678-9012",
-    location: "Austin, TX",
-    avatar: "",
-    status: "rejected",
-    appliedFor: "Backend Developer",
-    appliedAt: addDays(new Date(), -21),
-    tags: ["Node.js", "Python", "SQL"],
-  },
-];
+interface Application {
+  id: string;
+  status: ApplicationStatus;
+  applied_at: string;
+  resume_url?: string;
+  jobs: {
+    id: string;
+    title: string;
+    department: string;
+    location: string;
+  };
+}
 
 const getStatusStyles = (status: ApplicationStatus) => {
   switch (status) {
@@ -156,13 +95,80 @@ const getInitials = (name: string) => {
 const Candidates: React.FC = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredCandidates = mockCandidates.filter(
-    (candidate) =>
-      candidate.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      candidate.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      candidate.appliedFor.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  useEffect(() => {
+    const fetchCandidates = async () => {
+      try {
+        setLoading(true);
+        const data = await candidateService.getAllCandidates();
+        setCandidates(data || []);
+      } catch (error) {
+        console.error("Error fetching candidates:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load candidates. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCandidates();
+  }, []);
+
+  useEffect(() => {
+    const searchCandidates = async () => {
+      if (searchTerm.trim() === "") {
+        // If search is cleared, fetch all candidates
+        const data = await candidateService.getAllCandidates();
+        setCandidates(data || []);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const data = await candidateService.searchCandidates(searchTerm);
+        setCandidates(data || []);
+      } catch (error) {
+        console.error("Error searching candidates:", error);
+        toast({
+          title: "Error",
+          description: "Failed to search candidates. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Debounce search
+    const timer = setTimeout(() => {
+      searchCandidates();
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const handleAddCandidate = () => {
+    navigate("/candidates/new");
+  };
+
+  // Get most recent application for each candidate
+  const candidatesWithLatestApplication = candidates.map(candidate => {
+    const sortedApplications = [...(candidate.applications || [])].sort(
+      (a, b) => new Date(b.applied_at).getTime() - new Date(a.applied_at).getTime()
+    );
+    
+    const latestApplication = sortedApplications[0];
+    
+    return {
+      ...candidate,
+      latestApplication
+    };
+  });
 
   return (
     <div className="space-y-6">
@@ -173,7 +179,10 @@ const Candidates: React.FC = () => {
             Manage and track candidate applications
           </p>
         </div>
-        <Button className="bg-system-blue-600 hover:bg-system-blue-700">
+        <Button 
+          className="bg-system-blue-600 hover:bg-system-blue-700"
+          onClick={handleAddCandidate}
+        >
           <Plus className="h-4 w-4 mr-2" /> Add Candidate
         </Button>
       </div>
@@ -212,93 +221,105 @@ const Candidates: React.FC = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4">
-            {filteredCandidates.map((candidate) => (
-              <div
-                key={candidate.id}
-                className="p-4 rounded-lg border border-border bg-background hover:bg-muted/50 transition-colors cursor-pointer"
-                onClick={() => navigate(`/candidates/${candidate.id}`)}
-              >
-                <div className="flex items-start gap-4">
-                  <Avatar className="h-12 w-12">
-                    <AvatarImage src={candidate.avatar} alt={candidate.name} />
-                    <AvatarFallback className="bg-system-blue-100 text-system-blue-600">
-                      {getInitials(candidate.name)}
-                    </AvatarFallback>
-                  </Avatar>
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-start flex-wrap gap-2">
-                      <div>
-                        <h3 className="font-medium text-lg">{candidate.name}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Applied for: {candidate.appliedFor}
-                        </p>
-                      </div>
-                      <Badge
-                        variant="outline"
-                        className={getStatusStyles(candidate.status)}
-                      >
-                        {getStatusLabel(candidate.status)}
-                      </Badge>
-                    </div>
+          {loading ? (
+            <div className="flex justify-center p-8">
+              <Spinner size="lg" />
+            </div>
+          ) : candidatesWithLatestApplication.length === 0 ? (
+            <div className="text-center p-8 text-muted-foreground">
+              No candidates found. Try adjusting your search criteria.
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {candidatesWithLatestApplication.map((candidate) => (
+                <div
+                  key={candidate.id}
+                  className="p-4 rounded-lg border border-border bg-background hover:bg-muted/50 transition-colors cursor-pointer"
+                  onClick={() => navigate(`/candidates/${candidate.id}`)}
+                >
+                  <div className="flex items-start gap-4">
+                    <Avatar className="h-12 w-12">
+                      <AvatarImage src={candidate.avatar_url} alt={`${candidate.first_name} ${candidate.last_name}`} />
+                      <AvatarFallback className="bg-system-blue-100 text-system-blue-600">
+                        {getInitials(`${candidate.first_name} ${candidate.last_name}`)}
+                      </AvatarFallback>
+                    </Avatar>
                     
-                    <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm text-muted-foreground">
-                      <div className="flex items-center">
-                        <Mail className="h-4 w-4 mr-1.5 flex-shrink-0" />
-                        <span className="truncate">{candidate.email}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-start flex-wrap gap-2">
+                        <div>
+                          <h3 className="font-medium text-lg">{candidate.first_name} {candidate.last_name}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {candidate.latestApplication ? `Applied for: ${candidate.latestApplication.jobs.title}` : 'No applications yet'}
+                          </p>
+                        </div>
+                        {candidate.latestApplication && (
+                          <Badge
+                            variant="outline"
+                            className={getStatusStyles(candidate.latestApplication.status)}
+                          >
+                            {getStatusLabel(candidate.latestApplication.status)}
+                          </Badge>
+                        )}
                       </div>
-                      <div className="flex items-center">
-                        <Phone className="h-4 w-4 mr-1.5 flex-shrink-0" />
-                        {candidate.phone}
+                      
+                      <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm text-muted-foreground">
+                        <div className="flex items-center">
+                          <Mail className="h-4 w-4 mr-1.5 flex-shrink-0" />
+                          <span className="truncate">{candidate.email}</span>
+                        </div>
+                        <div className="flex items-center">
+                          <Phone className="h-4 w-4 mr-1.5 flex-shrink-0" />
+                          {candidate.phone || 'No phone'}
+                        </div>
+                        <div className="flex items-center">
+                          <MapPin className="h-4 w-4 mr-1.5 flex-shrink-0" />
+                          {candidate.location || 'No location'}
+                        </div>
                       </div>
-                      <div className="flex items-center">
-                        <MapPin className="h-4 w-4 mr-1.5 flex-shrink-0" />
-                        {candidate.location}
+                      
+                      {candidate.latestApplication && (
+                        <div className="mt-3 flex items-center text-xs text-muted-foreground">
+                          Applied on {format(new Date(candidate.latestApplication.applied_at), "MMM d, yyyy")}
+                        </div>
+                      )}
+                      
+                      <div className="mt-4 flex justify-end space-x-2">
+                        {candidate.latestApplication?.resume_url && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-xs h-8"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              window.open(candidate.latestApplication.resume_url, '_blank');
+                            }}
+                          >
+                            View Resume
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-xs h-8"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (candidate.latestApplication) {
+                              navigate(`/candidates/${candidate.id}/interview?applicationId=${candidate.latestApplication.id}`);
+                            } else {
+                              navigate(`/candidates/${candidate.id}/interview`);
+                            }
+                          }}
+                        >
+                          Schedule Interview
+                        </Button>
                       </div>
-                    </div>
-                    
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {candidate.tags.map((tag) => (
-                        <Badge key={tag} variant="secondary" className="text-xs">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                    
-                    <div className="mt-3 flex items-center text-xs text-muted-foreground">
-                      Applied on {format(candidate.appliedAt, "MMM d, yyyy")}
-                    </div>
-                    
-                    <div className="mt-4 flex justify-end space-x-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-xs h-8"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          // Add functionality
-                        }}
-                      >
-                        View Resume
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-xs h-8"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/candidates/${candidate.id}/interview`);
-                        }}
-                      >
-                        Schedule Interview
-                      </Button>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

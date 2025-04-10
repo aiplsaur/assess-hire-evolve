@@ -517,4 +517,65 @@ export const authService = {
     if (roles === "all") return true;
     return roles.includes(user.role);
   },
+
+  /**
+   * Create a new user with email (for admin/HR user creation)
+   * This bypasses the normal confirmation flow
+   */
+  createUserWithEmail: async ({ email, password, role = "candidate" }) => {
+    try {
+      // Create the user in Supabase Auth
+      const { data, error } = await supabase.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true, // Auto-confirm the email
+        user_metadata: {
+          role
+        }
+      });
+
+      if (error) {
+        // Check if user already exists
+        if (error.message?.includes("already registered") || 
+            error.message?.includes("already in use") ||
+            error.message?.includes("already exists")) {
+          
+          // For admin flow, we can just fetch the existing user
+          const { data: userData, error: userError } = await supabase
+            .from("profiles")
+            .select("id")
+            .eq("email", email)
+            .single();
+            
+          if (userError) throw userError;
+          
+          return { user: { id: userData.id, email }, success: true, existing: true };
+        }
+        
+        throw error;
+      }
+
+      if (!data || !data.user) {
+        throw new Error("Failed to create user");
+      }
+
+      return { user: data.user, success: true };
+    } catch (error) {
+      console.error("Error creating user:", error);
+      
+      // If this is a development environment without admin access
+      // Fall back to regular signup
+      if (error.message?.includes("not authorized") || error.status === 401) {
+        return await authService.signUp(
+          email, 
+          password, 
+          "New", 
+          "Candidate", 
+          role
+        );
+      }
+      
+      throw error;
+    }
+  },
 };
