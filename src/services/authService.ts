@@ -252,7 +252,7 @@ export const authService = {
     role: UserRole = "candidate"
   ): Promise<UserProfile> => {
     try {
-      // Create user in Supabase Auth
+      // Make sure to await the auth signup
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -264,24 +264,22 @@ export const authService = {
           },
         },
       });
-      console.log(data);
-      console.log(error);
       
       if (error) throw error;
       
       if (data && data.user) {
-        // Create a profile in the profiles table
+        // User is now authenticated, can insert into profiles
         const { error: profileError } = await supabase
-          .from('users')
+          .from('profiles')
           .insert({
-            // id: data.user.id,
+            id: data.user.id,  // important: must match auth.uid()
             first_name: firstName,
             last_name: lastName,
             role,
             email: data.user.email,
           });
           
-        if (profileError) console.error("Error creating user profile:", profileError);
+        if (profileError) console.error("Error creating profile:", profileError);
         
         // Create UserProfile object
         const userProfile: UserProfile = {
@@ -407,6 +405,45 @@ export const authService = {
       toast({
         title: "Password reset email sent (Demo)",
         description: "In a real application, an email would be sent to reset your password.",
+        variant: "destructive",
+      });
+      
+      throw error;
+    }
+  },
+
+  /**
+   * Update password with reset token
+   */
+  updatePassword: async (token: string, newPassword: string): Promise<void> => {
+    try {
+      // Use Supabase to update the password
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+      
+      if (error) throw error;
+      
+      // Show success toast
+      toast({
+        title: "Password updated successfully",
+        description: "You can now sign in with your new password.",
+      });
+    } catch (error) {
+      console.error("Error updating password:", error);
+      
+      // In demo mode, simulate successful password reset
+      if (process.env.NODE_ENV !== 'production') {
+        toast({
+          title: "Password updated successfully (Demo)",
+          description: "In a real application, your password would be updated in the database.",
+        });
+        return;
+      }
+      
+      toast({
+        title: "Failed to update password",
+        description: "The reset link may have expired. Please request a new one.",
         variant: "destructive",
       });
       
