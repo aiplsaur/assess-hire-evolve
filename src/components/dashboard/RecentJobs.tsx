@@ -1,11 +1,10 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CalendarRange, MapPin, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
+import { format, parseISO, isValid } from "date-fns";
 
 interface Job {
   id: string;
@@ -14,7 +13,7 @@ interface Job {
   location: string;
   type: "full-time" | "part-time" | "contract" | "remote";
   applicantsCount: number;
-  postedAt: Date;
+  created_at: string;
   status: "draft" | "published" | "closed";
 }
 
@@ -22,6 +21,24 @@ interface RecentJobsProps {
   jobs: Job[];
   className?: string;
 }
+
+// Helper function to safely format dates
+const formatDate = (dateString: string | null | undefined) => {
+  if (!dateString) {
+    return 'No date';
+  }
+  
+  try {
+    const date = parseISO(dateString);
+    if (!isValid(date)) {
+      return 'Invalid date';
+    }
+    return format(date, "MMM d, yyyy");
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return 'Invalid date';
+  }
+};
 
 const getJobTypeStyles = (type: Job["type"]) => {
   switch (type) {
@@ -108,7 +125,7 @@ export const RecentJobs: React.FC<RecentJobsProps> = ({
                   </div>
                   <div className="flex items-center">
                     <CalendarRange className="h-3 w-3 mr-1" />
-                    {format(job.postedAt, "MMM d, yyyy")}
+                    {formatDate(job.created_at)}
                   </div>
                 </div>
                 <div className="mt-3 flex justify-end space-x-2">
