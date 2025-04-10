@@ -31,6 +31,8 @@ import JobDetails from "./pages/jobs/JobDetails";
 import CandidateDetails from "./pages/candidates/CandidateDetails";
 import ScheduleInterview from "./pages/candidates/ScheduleInterview";
 import EditCandidate from "./pages/candidates/EditCandidate";
+import CreateAssessment from "./pages/assessments/CreateAssessment";
+import AssessmentDetails from "./pages/assessments/AssessmentDetails";
 
 const queryClient = new QueryClient();
 
@@ -116,7 +118,32 @@ const App = () => (
                 </RoleBasedGuard>
               } />
               <Route path="assessments" element={
-                <RoleBasedGuard allowedRoles={["interviewer", "admin"]}>
+                <RoleBasedGuard allowedRoles={["hr", "admin", "interviewer"]}>
+                  <Assessments />
+                </RoleBasedGuard>
+              } />
+              <Route path="assessments/create" element={
+                <RoleBasedGuard allowedRoles={["hr", "admin"]}>
+                  <CreateAssessment />
+                </RoleBasedGuard>
+              } />
+              <Route path="assessments/:assessmentId" element={
+                <RoleBasedGuard allowedRoles={["hr", "admin", "interviewer"]}>
+                  <AssessmentDetails />
+                </RoleBasedGuard>
+              } />
+              <Route path="assessments/:assessmentId/edit" element={
+                <RoleBasedGuard allowedRoles={["hr", "admin"]}>
+                  <CreateAssessment />
+                </RoleBasedGuard>
+              } />
+              <Route path="assessments/:assessmentId/assign" element={
+                <RoleBasedGuard allowedRoles={["hr", "admin"]}>
+                  <Assessments />
+                </RoleBasedGuard>
+              } />
+              <Route path="assessments/:assessmentId/results" element={
+                <RoleBasedGuard allowedRoles={["hr", "admin", "interviewer"]}>
                   <Assessments />
                 </RoleBasedGuard>
               } />
