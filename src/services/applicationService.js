@@ -128,5 +128,34 @@ export const applicationService = {
     } catch (error) {
       throw handleError(error, 'updateApplication')
     }
+  },
+  
+  async getAllApplications() {
+    try {
+      const { data, error } = await supabase
+        .from('applications')
+        .select(`
+          id,
+          candidate_id,
+          job_id,
+          status
+        `)
+        .order('applied_at', { ascending: false })
+      
+      if (error) throw error
+      return data
+    } catch (error) {
+      // If we're in development mode and there's an error, return mock data
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('Using mock application data due to error:', error);
+        return [
+          { id: 'mock-app-1', candidate_id: 'mock-candidate-1', job_id: 'mock-job-1', status: 'applied' },
+          { id: 'mock-app-2', candidate_id: 'mock-candidate-2', job_id: 'mock-job-2', status: 'interview' },
+          { id: 'mock-app-3', candidate_id: 'mock-candidate-3', job_id: 'mock-job-3', status: 'offered' }
+        ];
+      }
+      
+      throw handleError(error, 'getAllApplications')
+    }
   }
 } 

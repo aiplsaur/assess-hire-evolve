@@ -29,7 +29,7 @@ import JobApplicants from "./pages/jobs/JobApplicants";
 import CreateJob from "./pages/jobs/CreateJob";
 import JobDetails from "./pages/jobs/JobDetails";
 import CandidateDetails from "./pages/candidates/CandidateDetails";
-import ScheduleInterview from "./pages/candidates/ScheduleInterview";
+import ScheduleInterview from "./pages/interviews/ScheduleInterview";
 import EditCandidate from "./pages/candidates/EditCandidate";
 import CreateAssessment from "./pages/assessments/CreateAssessment";
 import AssessmentDetails from "./pages/assessments/AssessmentDetails";
@@ -151,6 +151,11 @@ const App = () => (
               <Route path="interviews" element={
                 <RoleBasedGuard allowedRoles={["interviewer", "hr", "admin"]}>
                   <Interviews />
+                </RoleBasedGuard>
+              } />
+              <Route path="interviews/schedule" element={
+                <RoleBasedGuard allowedRoles={["hr", "admin"]}>
+                  <ScheduleInterview />
                 </RoleBasedGuard>
               } />
               

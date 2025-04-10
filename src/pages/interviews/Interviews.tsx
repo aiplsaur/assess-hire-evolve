@@ -1,15 +1,23 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Filter, Calendar, Clock, Video, MapPin, Plus } from "lucide-react";
-import { format, addDays, addHours, isToday, isPast, isThisWeek } from "date-fns";
+import { Filter, Calendar, Clock, Video, MapPin, Plus, Search, AlertCircle } from "lucide-react";
+import { format, isToday, isPast, isThisWeek } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
+import { interviewService } from "@/services/interviewService";
+import { toast } from "@/hooks/use-toast";
+import { Spinner } from "@/components/ui/spinner";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
 
 interface Interview {
   id: string;
@@ -33,129 +41,6 @@ interface Interview {
   notes?: string;
   feedbackSubmitted: boolean;
 }
-
-const mockInterviews: Interview[] = [
-  {
-    id: "1",
-    candidate: {
-      id: "c1",
-      name: "Jane Cooper",
-      avatar: "",
-    },
-    interviewers: [
-      {
-        id: "i1",
-        name: "Robert Fox",
-        avatar: "",
-      },
-      {
-        id: "i2",
-        name: "Alex Johnson",
-        avatar: "",
-      },
-    ],
-    position: "Frontend Developer",
-    scheduledAt: addHours(new Date(), 3),
-    duration: 45,
-    type: "remote",
-    meetingLink: "https://zoom.us/j/123456789",
-    status: "scheduled",
-    feedbackSubmitted: false,
-  },
-  {
-    id: "2",
-    candidate: {
-      id: "c2",
-      name: "Devon Lane",
-      avatar: "",
-    },
-    interviewers: [
-      {
-        id: "i3",
-        name: "Michael Wilson",
-        avatar: "",
-      },
-    ],
-    position: "Product Manager",
-    scheduledAt: addDays(new Date(), 1),
-    duration: 60,
-    type: "onsite",
-    location: "Main Office - Room 302",
-    status: "scheduled",
-    feedbackSubmitted: false,
-  },
-  {
-    id: "3",
-    candidate: {
-      id: "c3",
-      name: "Robert Fox",
-      avatar: "",
-    },
-    interviewers: [
-      {
-        id: "i1",
-        name: "Robert Fox",
-        avatar: "",
-      },
-    ],
-    position: "UX Designer",
-    scheduledAt: addDays(new Date(), -2),
-    duration: 30,
-    type: "remote",
-    meetingLink: "https://meet.google.com/abc-defg-hij",
-    status: "completed",
-    feedbackSubmitted: true,
-  },
-  {
-    id: "4",
-    candidate: {
-      id: "c4",
-      name: "Leslie Alexander",
-      avatar: "",
-    },
-    interviewers: [
-      {
-        id: "i4",
-        name: "Jessica Taylor",
-        avatar: "",
-      },
-      {
-        id: "i5",
-        name: "Samantha Lee",
-        avatar: "",
-      },
-    ],
-    position: "Marketing Specialist",
-    scheduledAt: addDays(new Date(), -1),
-    duration: 45,
-    type: "remote",
-    meetingLink: "https://zoom.us/j/987654321",
-    status: "completed",
-    feedbackSubmitted: false,
-  },
-  {
-    id: "5",
-    candidate: {
-      id: "c5",
-      name: "Cameron Williamson",
-      avatar: "",
-    },
-    interviewers: [
-      {
-        id: "i6",
-        name: "David Chen",
-        avatar: "",
-      },
-    ],
-    position: "DevOps Engineer",
-    scheduledAt: addDays(new Date(), 3),
-    duration: 60,
-    type: "onsite",
-    location: "Main Office - Room 201",
-    status: "scheduled",
-    feedbackSubmitted: false,
-  },
-];
 
 const getInitials = (name: string) => {
   return name
@@ -188,20 +73,103 @@ const getTypeStyles = (type: "remote" | "onsite") => {
 
 const Interviews: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, hasRole } = useAuth();
   const [filter, setFilter] = useState<"all" | "upcoming" | "today" | "past">("all");
+  const [interviews, setInterviews] = useState<Interview[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
 
-  const filteredInterviews = mockInterviews.filter((interview) => {
-    switch (filter) {
-      case "upcoming":
-        return !isPast(interview.scheduledAt) || isToday(interview.scheduledAt);
-      case "today":
-        return isToday(interview.scheduledAt);
-      case "past":
-        return isPast(interview.scheduledAt) && !isToday(interview.scheduledAt);
-      default:
-        return true;
-    }
+  useEffect(() => {
+    const fetchInterviews = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Build filters
+        const filters: any = {};
+        
+        // Add status filter if selected
+        if (statusFilter) {
+          filters.status = statusFilter;
+        }
+        
+        // Add date filters based on selected filter tab
+        const now = new Date();
+        if (filter === "upcoming") {
+          filters.from = now.toISOString();
+        } else if (filter === "today") {
+          const startOfDay = new Date(now);
+          startOfDay.setHours(0, 0, 0, 0);
+          const endOfDay = new Date(now);
+          endOfDay.setHours(23, 59, 59, 999);
+          filters.from = startOfDay.toISOString();
+          filters.to = endOfDay.toISOString();
+        } else if (filter === "past") {
+          filters.to = now.toISOString();
+        }
+        
+        // Add search term if present
+        if (searchTerm) {
+          filters.search = searchTerm;
+        }
+        
+        // Add interviewer filter if user is an interviewer
+        if (hasRole(["interviewer"]) && user?.id) {
+          filters.interviewerId = user.id;
+        }
+        
+        const data = await interviewService.getAllInterviews(filters);
+        setInterviews(data);
+      } catch (err) {
+        console.error("Error fetching interviews:", err);
+        setError("Failed to load interviews. Please try again.");
+        toast({
+          title: "Error",
+          description: "Failed to load interviews. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchInterviews();
+  }, [filter, statusFilter, searchTerm, user?.id, hasRole]);
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  };
+
+  const handleRescheduleInterview = async (interviewId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigate(`/interviews/${interviewId}/reschedule`);
+  };
+
+  const handleJoinCall = (meetingLink: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    window.open(meetingLink, "_blank");
+  };
+
+  const handleSubmitFeedback = (interviewId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigate(`/interviews/${interviewId}/feedback`);
+  };
+
+  const handleViewDetails = (interviewId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigate(`/interviews/${interviewId}`);
+  };
+
+  const handleScheduleInterview = () => {
+    navigate("/interviews/schedule");
+  };
+
+  // Filter the interviews client-side for certain conditions
+  const filteredInterviews = interviews.filter((interview) => {
+    // Apply additional client-side filters if needed
+    return true;
   });
 
   return (
@@ -213,7 +181,10 @@ const Interviews: React.FC = () => {
             Schedule and manage candidate interviews
           </p>
         </div>
-        <Button className="bg-system-blue-600 hover:bg-system-blue-700">
+        <Button 
+          className="bg-system-blue-600 hover:bg-system-blue-700"
+          onClick={handleScheduleInterview}
+        >
           <Plus className="h-4 w-4 mr-2" /> Schedule Interview
         </Button>
       </div>
@@ -260,36 +231,84 @@ const Interviews: React.FC = () => {
             </CardTitle>
             <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
               <div className="relative w-full md:w-64">
-                <Input placeholder="Search interviews..." className="pl-8 w-full" />
+                <Input 
+                  placeholder="Search interviews..." 
+                  className="pl-8 w-full"
+                  value={searchTerm}
+                  onChange={handleSearch}
+                />
                 <div className="absolute left-2.5 top-2.5 text-muted-foreground">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                    className="w-5 h-5"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
+                  <Search className="h-4 w-4" />
                 </div>
               </div>
-              <Button variant="outline" className="flex gap-2 whitespace-nowrap">
-                <Filter className="h-4 w-4" /> Filter
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    className={`flex gap-2 whitespace-nowrap ${statusFilter ? 'bg-muted' : ''}`}
+                  >
+                    <Filter className="h-4 w-4" /> 
+                    {statusFilter ? `Status: ${statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}` : 'All Statuses'}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setStatusFilter(null)}>
+                    All Statuses
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setStatusFilter('scheduled')}>
+                    Scheduled
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setStatusFilter('completed')}>
+                    Completed
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setStatusFilter('canceled')}>
+                    Canceled
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setStatusFilter('rescheduled')}>
+                    Rescheduled
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4">
-            {filteredInterviews.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">No interviews found</p>
-              </div>
-            ) : (
-              filteredInterviews.map((interview) => (
+          {loading ? (
+            <div className="flex justify-center items-center py-12">
+              <Spinner size="lg" />
+            </div>
+          ) : error ? (
+            <div className="text-center py-8 bg-system-red-50 rounded-lg">
+              <AlertCircle className="h-8 w-8 text-system-red-500 mx-auto mb-2" />
+              <h3 className="text-lg font-medium text-system-red-600 mb-1">Error Loading Interviews</h3>
+              <p className="text-muted-foreground">{error}</p>
+              <Button 
+                variant="outline" 
+                className="mt-4"
+                onClick={() => window.location.reload()}
+              >
+                Try Again
+              </Button>
+            </div>
+          ) : filteredInterviews.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground mb-2">No interviews found</p>
+              {searchTerm || statusFilter ? (
+                <p className="text-sm text-muted-foreground">
+                  Try adjusting your search or filters
+                </p>
+              ) : (
+                <Button 
+                  onClick={handleScheduleInterview}
+                  className="mt-2 bg-system-blue-600 hover:bg-system-blue-700"
+                >
+                  <Plus className="h-4 w-4 mr-2" /> Schedule Interview
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {filteredInterviews.map((interview) => (
                 <div
                   key={interview.id}
                   className={cn(
@@ -391,10 +410,7 @@ const Interviews: React.FC = () => {
                               <Button
                                 size="sm"
                                 className="text-xs h-8 bg-system-blue-500 hover:bg-system-blue-600"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  window.open(interview.meetingLink, "_blank");
-                                }}
+                                onClick={(e) => handleJoinCall(interview.meetingLink!, e)}
                               >
                                 Join Call
                               </Button>
@@ -403,10 +419,7 @@ const Interviews: React.FC = () => {
                               size="sm"
                               variant="outline"
                               className="text-xs h-8"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                // Reschedule
-                              }}
+                              onClick={(e) => handleRescheduleInterview(interview.id, e)}
                             >
                               Reschedule
                             </Button>
@@ -416,10 +429,7 @@ const Interviews: React.FC = () => {
                           <Button
                             size="sm"
                             className="text-xs h-8 bg-system-green-500 hover:bg-system-green-600"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/interviews/${interview.id}/feedback`);
-                            }}
+                            onClick={(e) => handleSubmitFeedback(interview.id, e)}
                           >
                             Submit Feedback
                           </Button>
@@ -428,10 +438,7 @@ const Interviews: React.FC = () => {
                           size="sm"
                           variant="outline"
                           className="text-xs h-8"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            // View details
-                          }}
+                          onClick={(e) => handleViewDetails(interview.id, e)}
                         >
                           View Details
                         </Button>
@@ -439,9 +446,9 @@ const Interviews: React.FC = () => {
                     </div>
                   </div>
                 </div>
-              ))
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -165,16 +165,17 @@ const ScheduleInterview: React.FC = () => {
     setSubmitting(true);
     try {
       const interviewData = {
-        interviewerId: values.interviewerId,
-        scheduledAt: values.scheduledAt,
-        durationMinutes: values.durationMinutes,
+        application_id: application.id,
+        interviewer_id: values.interviewerId,
+        scheduled_at: values.scheduledAt,
+        duration_minutes: values.durationMinutes,
         location: values.location || undefined,
-        meetingLink: values.meetingLink || undefined,
+        meeting_link: values.meetingLink || undefined,
         notes: values.notes || undefined,
       };
       
       // Schedule the interview
-      await interviewService.scheduleInterview(application.id, interviewData);
+      await interviewService.scheduleInterview(interviewData);
       
       // Update application status to interview_scheduled if not already at a later stage
       const laterStages = ["interview_scheduled", "interview_completed", "offered", "hired"];
