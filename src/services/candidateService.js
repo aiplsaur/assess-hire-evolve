@@ -72,7 +72,8 @@ export const candidateService = {
             status,
             applied_at,
             resume_url,
-            notes,
+            updated_at,
+            cover_letter,
             jobs (
               id,
               title,
@@ -83,7 +84,10 @@ export const candidateService = {
               id,
               status,
               scheduled_at,
-              feedback,
+              notes,
+              duration_minutes,
+              location,
+              meeting_link,
               profiles!interviewer_id (id, first_name, last_name)
             ),
             assessment_assignments (
@@ -189,6 +193,31 @@ export const candidateService = {
       return data
     } catch (error) {
       throw handleError(error, 'createCandidate')
+    }
+  },
+
+  async updateCandidate(candidateId, candidateData) {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({ 
+          first_name: candidateData.first_name,
+          last_name: candidateData.last_name,
+          email: candidateData.email,
+          phone: candidateData.phone || '',
+          location: candidateData.location || '',
+          headline: candidateData.headline || '',
+          bio: candidateData.bio || '',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', candidateId)
+        .select()
+        .single()
+      
+      if (error) throw error
+      return data
+    } catch (error) {
+      throw handleError(error, 'updateCandidate')
     }
   }
 } 

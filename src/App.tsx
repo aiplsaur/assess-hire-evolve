@@ -28,6 +28,9 @@ import JobEdit from "./pages/jobs/JobEdit";
 import JobApplicants from "./pages/jobs/JobApplicants";
 import CreateJob from "./pages/jobs/CreateJob";
 import JobDetails from "./pages/jobs/JobDetails";
+import CandidateDetails from "./pages/candidates/CandidateDetails";
+import ScheduleInterview from "./pages/candidates/ScheduleInterview";
+import EditCandidate from "./pages/candidates/EditCandidate";
 
 const queryClient = new QueryClient();
 
@@ -95,6 +98,21 @@ const App = () => (
               <Route path="candidates/new" element={
                 <RoleBasedGuard allowedRoles={["hr", "admin"]}>
                   <AddCandidate />
+                </RoleBasedGuard>
+              } />
+              <Route path="candidates/:candidateId" element={
+                <RoleBasedGuard allowedRoles={["hr", "admin", "interviewer"]}>
+                  <CandidateDetails />
+                </RoleBasedGuard>
+              } />
+              <Route path="candidates/:candidateId/edit" element={
+                <RoleBasedGuard allowedRoles={["hr", "admin"]}>
+                  <EditCandidate />
+                </RoleBasedGuard>
+              } />
+              <Route path="candidates/:candidateId/interview" element={
+                <RoleBasedGuard allowedRoles={["hr", "admin", "interviewer"]}>
+                  <ScheduleInterview />
                 </RoleBasedGuard>
               } />
               <Route path="assessments" element={

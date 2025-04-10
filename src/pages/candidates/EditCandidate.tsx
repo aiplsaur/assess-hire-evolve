@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { z } from "zod";
@@ -18,7 +18,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { candidateService } from "@/services/candidateService";
-import { authService } from "@/services/authService";
 import { useAuth } from "@/context/AuthContext";
 import { Spinner } from "@/components/ui/spinner";
 
@@ -35,12 +34,12 @@ const candidateFormSchema = z.object({
 
 type CandidateFormValues = z.infer<typeof candidateFormSchema>;
 
-const AddCandidate: React.FC = () => {
+const EditCandidate: React.FC = () => {
+  const { candidateId } = useParams<{ candidateId: string }>();
   const navigate = useNavigate();
-  const { user, hasRole } = useAuth();
+  const { hasRole } = useAuth();
+  const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isAuthorized, setIsAuthorized] = useState(false);
-  const [isAuthChecking, setIsAuthChecking] = useState(true);
 
   const form = useForm<CandidateFormValues>({
     resolver: zodResolver(candidateFormSchema),
@@ -55,100 +54,80 @@ const AddCandidate: React.FC = () => {
     },
   });
 
-  // Check if user has permission to add candidates
+  // Check if user has permission to edit candidates
   useEffect(() => {
-    const checkAuthorization = async () => {
-      try {
-        setIsAuthChecking(true);
-        
-        // Check if the user is logged in
-        if (!user) {
-          toast({
-            title: "Authentication Required",
-            description: "You must be logged in to access this page",
-            variant: "destructive",
-          });
-          navigate("/auth/login");
-          return;
-        }
+    if (!hasRole(["admin", "hr"])) {
+      toast({
+        title: "Access Denied",
+        description: "You do not have permission to edit candidates",
+        variant: "destructive",
+      });
+      navigate("/candidates");
+    }
+  }, [hasRole, navigate]);
 
-        // Check if user has the required role
-        const authorized = hasRole(["admin", "hr"]);
-        setIsAuthorized(authorized);
+  // Fetch candidate data
+  useEffect(() => {
+    const fetchCandidate = async () => {
+      if (!candidateId) return;
+
+      try {
+        setLoading(true);
+        const data = await candidateService.getCandidateById(candidateId);
         
-        if (!authorized) {
-          toast({
-            title: "Access Denied",
-            description: "You do not have permission to add candidates",
-            variant: "destructive",
+        if (data) {
+          form.reset({
+            firstName: data.first_name,
+            lastName: data.last_name,
+            email: data.email,
+            phone: data.phone || "",
+            location: data.location || "",
+            headline: data.headline || "",
+            bio: data.bio || "",
           });
-          navigate("/candidates");
         }
       } catch (error) {
-        console.error("Error checking authorization:", error);
+        console.error("Error fetching candidate:", error);
         toast({
-          title: "Authorization Error",
-          description: "Failed to verify your permissions. Please try again.",
+          title: "Error",
+          description: "Failed to load candidate data. Please try again.",
           variant: "destructive",
         });
         navigate("/candidates");
       } finally {
-        setIsAuthChecking(false);
+        setLoading(false);
       }
     };
 
-    checkAuthorization();
-  }, [hasRole, navigate, user]);
+    fetchCandidate();
+  }, [candidateId, form, navigate]);
 
   const onSubmit = async (data: CandidateFormValues) => {
-    if (!user || !isAuthorized) {
-      toast({
-        title: "Access Denied",
-        description: "You do not have permission to add candidates",
-        variant: "destructive",
-      });
-      return;
-    }
-
+    if (!candidateId) return;
+    
     setIsSubmitting(true);
     try {
-      // First create a user with auth service
-      const password = generateRandomPassword();
-      const { user: newUser, success, dev } = await authService.createUserWithEmail({
+      await candidateService.updateCandidate(candidateId, {
+        first_name: data.firstName,
+        last_name: data.lastName,
         email: data.email,
-        password,
-        role: "candidate"
-      });
-      
-      if (!newUser?.id) {
-        throw new Error("Failed to create user account");
-      }
-      
-      // Then create the profile for this user
-      const candidate = await candidateService.createCandidate({
-        id: newUser.id,
-        email: data.email,
-        firstName: data.firstName,
-        lastName: data.lastName,
         phone: data.phone || "",
         location: data.location || "",
         headline: data.headline || "",
-        bio: data.bio || ""
+        bio: data.bio || "",
       });
       
       toast({
         title: "Success",
-        description: dev 
-          ? "Candidate created in demo mode (no backend changes)" 
-          : "Candidate has been added successfully",
+        description: "Candidate information has been updated",
       });
       
-      // Navigate to the candidate details page
-      navigate(`/candidates/${candidate.id}`);
+      // Navigate back to candidate details
+      navigate(`/candidates/${candidateId}`);
     } catch (error) {
-      console.error("Error adding candidate:", error);
+      console.error("Error updating candidate:", error);
       toast({
-        title: "Failed to add candidate",
+        title: "Failed to update candidate",
         description: error instanceof Error ? error.message : "An unexpected error occurred",
         variant: "destructive",
       });
@@ -157,36 +136,10 @@ const AddCandidate: React.FC = () => {
     }
   };
 
-  // Generate a random secure password
-  const generateRandomPassword = () => {
-    return Math.random().toString(36).slice(2, 10) + 
-           Math.random().toString(36).slice(2, 10) + 
-           Math.random().toString(36).toUpperCase().slice(2, 4) + 
-           "!@#$";
-  };
-
-  if (isAuthChecking) {
+  if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
         <Spinner size="lg" />
-      </div>
-    );
-  }
-
-  if (!isAuthorized) {
-    return (
-      <div className="text-center py-12">
-        <h2 className="text-2xl font-bold mb-2">Access Denied</h2>
-        <p className="text-muted-foreground mb-6">
-          You do not have permission to add candidates.
-        </p>
-        <Button 
-          variant="default" 
-          onClick={() => navigate("/candidates")}
-          className="bg-system-blue-600 hover:bg-system-blue-700"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Candidates
-        </Button>
       </div>
     );
   }
@@ -198,20 +151,20 @@ const AddCandidate: React.FC = () => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate("/candidates")}
+            onClick={() => navigate(`/candidates/${candidateId}`)}
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">Add Candidate</h1>
+            <h1 className="text-2xl font-bold">Edit Candidate</h1>
             <p className="text-muted-foreground">
-              Add a new candidate to the system
+              Update candidate information
             </p>
           </div>
         </div>
         <Button
           variant="outline"
-          onClick={() => navigate("/candidates")}
+          onClick={() => navigate(`/candidates/${candidateId}`)}
         >
           Cancel
         </Button>
@@ -338,13 +291,7 @@ const AddCandidate: React.FC = () => {
                   disabled={isSubmitting}
                   className="bg-system-blue-600 hover:bg-system-blue-700"
                 >
-                  {isSubmitting ? (
-                    <>
-                      <Spinner className="mr-2" size="sm" /> Adding...
-                    </>
-                  ) : (
-                    "Add Candidate"
-                  )}
+                  {isSubmitting ? "Saving..." : "Save Changes"}
                 </Button>
               </div>
             </form>
@@ -355,4 +302,4 @@ const AddCandidate: React.FC = () => {
   );
 };
 
-export default AddCandidate; 
+export default EditCandidate; 
