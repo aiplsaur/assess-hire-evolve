@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -24,6 +23,9 @@ import Reports from "./pages/reports/Reports";
 import Settings from "./pages/settings/Settings";
 import Applications from "./pages/applications/Applications";
 import NotFound from "./pages/NotFound";
+import JobEdit from "./pages/jobs/JobEdit";
+import JobApplicants from "./pages/jobs/JobApplicants";
+import CreateJob from "./pages/jobs/CreateJob";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +61,21 @@ const App = () => (
               <Route path="jobs" element={
                 <RoleBasedGuard allowedRoles={["candidate", "hr", "admin"]}>
                   <Jobs />
+                </RoleBasedGuard>
+              } />
+              <Route path="jobs/create" element={
+                <RoleBasedGuard allowedRoles={["hr", "admin"]}>
+                  <CreateJob />
+                </RoleBasedGuard>
+              } />
+              <Route path="jobs/:jobId/edit" element={
+                <RoleBasedGuard allowedRoles={["hr", "admin"]}>
+                  <JobEdit />
+                </RoleBasedGuard>
+              } />
+              <Route path="jobs/:jobId/applicants" element={
+                <RoleBasedGuard allowedRoles={["hr", "admin", "interviewer"]}>
+                  <JobApplicants />
                 </RoleBasedGuard>
               } />
               

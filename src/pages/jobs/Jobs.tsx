@@ -10,7 +10,6 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { jobService } from "@/services/jobService";
 import { JobPosting } from "@/types";
-import CreateJobModal from "@/components/jobs/CreateJobModal";
 import { toast } from "@/hooks/use-toast";
 
 const getJobTypeStyles = (type: "full-time" | "part-time" | "contract" | "remote") => {
@@ -47,7 +46,6 @@ const Jobs: React.FC = () => {
   const [jobs, setJobs] = useState<JobPosting[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [createModalOpen, setCreateModalOpen] = useState(false);
   const [applicantCounts, setApplicantCounts] = useState<Record<string, number>>({});
   
   const fetchJobs = async () => {
@@ -84,11 +82,6 @@ const Jobs: React.FC = () => {
     fetchJobs();
   }, []);
   
-  const handleJobCreated = (newJob: JobPosting) => {
-    // Add the new job to the list and refresh
-    fetchJobs();
-  };
-  
   // Filter jobs based on search query
   const filteredJobs = searchQuery 
     ? jobs.filter(job => 
@@ -113,7 +106,7 @@ const Jobs: React.FC = () => {
         {canCreateJobs && (
           <Button 
             className="bg-system-blue-600 hover:bg-system-blue-700"
-            onClick={() => setCreateModalOpen(true)}
+            onClick={() => navigate("/jobs/create")}
           >
             <Plus className="h-4 w-4 mr-2" /> Create New Job
           </Button>
@@ -244,7 +237,7 @@ const Jobs: React.FC = () => {
               </p>
               {canCreateJobs && !searchQuery && (
                 <Button 
-                  onClick={() => setCreateModalOpen(true)}
+                  onClick={() => navigate("/jobs/create")}
                   className="bg-system-blue-600 hover:bg-system-blue-700"
                 >
                   <Plus className="h-4 w-4 mr-2" /> Create New Job
@@ -254,13 +247,6 @@ const Jobs: React.FC = () => {
           )}
         </CardContent>
       </Card>
-      
-      {/* Create Job Modal */}
-      <CreateJobModal 
-        open={createModalOpen} 
-        onOpenChange={setCreateModalOpen}
-        onJobCreated={handleJobCreated}
-      />
     </div>
   );
 };
