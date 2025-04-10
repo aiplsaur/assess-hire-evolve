@@ -519,6 +519,53 @@ export const authService = {
   },
 
   /**
+   * Get all users with interviewer/admin/hr roles
+   */
+  getAllUsers: async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, email, role, avatar_url')
+        .in('role', ['interviewer', 'admin', 'hr'])
+        .order('first_name', { ascending: true });
+      
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      
+      // For development/demo, return mock users if there's an error
+      if (process.env.NODE_ENV !== "production") {
+        return [
+          { 
+            id: "1", 
+            first_name: "Admin", 
+            last_name: "User", 
+            email: "admin@example.com", 
+            role: "admin" 
+          },
+          { 
+            id: "2", 
+            first_name: "HR", 
+            last_name: "Manager", 
+            email: "hr@example.com", 
+            role: "hr" 
+          },
+          { 
+            id: "3", 
+            first_name: "Technical", 
+            last_name: "Interviewer", 
+            email: "interviewer@example.com", 
+            role: "interviewer" 
+          }
+        ];
+      }
+      
+      throw error;
+    }
+  },
+
+  /**
    * Create a new user with email (for admin/HR user creation)
    * This bypasses the normal confirmation flow
    */
