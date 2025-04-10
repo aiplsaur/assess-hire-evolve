@@ -9,6 +9,12 @@ import { useNavigate } from "react-router-dom";
 import { assessmentService } from "@/services/assessmentService";
 import { toast } from "@/hooks/use-toast";
 import { Spinner } from "@/components/ui/spinner";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
 
 interface Assessment {
   id: string;
@@ -131,6 +137,36 @@ const Assessments: React.FC = () => {
     navigate(`/assessments/${assessmentId}/assign`);
   };
 
+  const handleUnarchiveAssessment = async (assessmentId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await assessmentService.updateAssessment(assessmentId, {
+        status: "active"
+      });
+      
+      toast({
+        title: "Assessment Unarchived",
+        description: "The assessment is now active and available for use."
+      });
+      
+      // Update the assessment in the local state
+      setAssessments(
+        assessments.map(assessment => 
+          assessment.id === assessmentId 
+            ? { ...assessment, status: "active" } 
+            : assessment
+        )
+      );
+    } catch (error) {
+      console.error("Error unarchiving assessment:", error);
+      toast({
+        title: "Error",
+        description: "Failed to unarchive assessment. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -164,14 +200,31 @@ const Assessments: React.FC = () => {
                   <Search className="h-4 w-4" />
                 </div>
               </div>
-              <Button 
-                variant="outline" 
-                className={`flex gap-2 whitespace-nowrap ${statusFilter ? 'bg-muted' : ''}`}
-                onClick={() => setStatusFilter(statusFilter ? null : 'active')}
-              >
-                <Filter className="h-4 w-4" /> 
-                {statusFilter ? `Filter: ${statusFilter}` : 'Filter'}
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    className={`flex gap-2 whitespace-nowrap ${statusFilter ? 'bg-muted' : ''}`}
+                  >
+                    <Filter className="h-4 w-4" /> 
+                    {statusFilter ? `Status: ${statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}` : 'All Statuses'}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setStatusFilter(null)}>
+                    All Statuses
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setStatusFilter('active')}>
+                    Active
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setStatusFilter('draft')}>
+                    Draft
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setStatusFilter('archived')}>
+                    Archived
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </CardHeader>
@@ -259,35 +312,47 @@ const Assessments: React.FC = () => {
                   </div>
                   
                   <div className="mt-4 flex justify-end space-x-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-xs h-8"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/assessments/${assessment.id}/edit`);
-                      }}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-xs h-8"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/assessments/${assessment.id}/results`);
-                      }}
-                    >
-                      View Results
-                    </Button>
-                    {assessment.status === "active" && (
+                    {assessment.status !== "archived" ? (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-xs h-8"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/assessments/${assessment.id}/edit`);
+                          }}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-xs h-8"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/assessments/${assessment.id}/results`);
+                          }}
+                        >
+                          View Results
+                        </Button>
+                        {assessment.status === "active" && (
+                          <Button
+                            size="sm"
+                            className="text-xs h-8 bg-system-blue-500 hover:bg-system-blue-600"
+                            onClick={(e) => handleSendToCandidate(assessment.id, e)}
+                          >
+                            Send to Candidates
+                          </Button>
+                        )}
+                      </>
+                    ) : (
                       <Button
                         size="sm"
-                        className="text-xs h-8 bg-system-blue-500 hover:bg-system-blue-600"
-                        onClick={(e) => handleSendToCandidate(assessment.id, e)}
+                        className="text-xs h-8 bg-system-green-500 hover:bg-system-green-600"
+                        onClick={(e) => handleUnarchiveAssessment(assessment.id, e)}
                       >
-                        Send to Candidates
+                        Unarchive
                       </Button>
                     )}
                   </div>

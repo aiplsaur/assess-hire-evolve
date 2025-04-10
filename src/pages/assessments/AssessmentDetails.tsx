@@ -205,6 +205,35 @@ const AssessmentDetails: React.FC = () => {
     }
   };
   
+  const handleUnarchiveAssessment = async () => {
+    try {
+      if (!assessment) return;
+      
+      await assessmentService.updateAssessment(assessmentId!, {
+        status: "active"
+      });
+      
+      toast({
+        title: "Assessment Unarchived",
+        description: "The assessment has been unarchived and is now active."
+      });
+      
+      // Update local state
+      setAssessment({
+        ...assessment,
+        status: "active"
+      });
+      
+    } catch (error) {
+      console.error("Error unarchiving assessment:", error);
+      toast({
+        title: "Error",
+        description: "Failed to unarchive assessment. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+  
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
@@ -267,41 +296,54 @@ const AssessmentDetails: React.FC = () => {
       </div>
       
       <div className="flex flex-wrap gap-2">
-        {hasRole(["admin", "hr"]) && assessment.status !== "archived" && (
+        {hasRole(["admin", "hr"]) && (
           <>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleEditAssessment}
-              className="h-9"
-            >
-              <Edit className="h-4 w-4 mr-2" /> Edit Assessment
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleDuplicateAssessment}
-              className="h-9"
-            >
-              <Copy className="h-4 w-4 mr-2" /> Duplicate
-            </Button>
-            {assessment.status === "active" && (
+            {assessment.status !== "archived" ? (
+              <>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleEditAssessment}
+                  className="h-9"
+                >
+                  <Edit className="h-4 w-4 mr-2" /> Edit Assessment
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleDuplicateAssessment}
+                  className="h-9"
+                >
+                  <Copy className="h-4 w-4 mr-2" /> Duplicate
+                </Button>
+                {assessment.status === "active" && (
+                  <Button 
+                    size="sm" 
+                    onClick={handleSendToCandidate}
+                    className="h-9 bg-system-blue-600 hover:bg-system-blue-700"
+                  >
+                    <Send className="h-4 w-4 mr-2" /> Send to Candidates
+                  </Button>
+                )}
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleArchiveAssessment}
+                  className="h-9 text-system-red-500 hover:text-system-red-600"
+                >
+                  <Archive className="h-4 w-4 mr-2" /> Archive
+                </Button>
+              </>
+            ) : (
               <Button 
+                variant="outline" 
                 size="sm" 
-                onClick={handleSendToCandidate}
-                className="h-9 bg-system-blue-600 hover:bg-system-blue-700"
+                onClick={handleUnarchiveAssessment}
+                className="h-9 text-system-green-500 hover:text-system-green-600"
               >
-                <Send className="h-4 w-4 mr-2" /> Send to Candidates
+                <CheckCircle className="h-4 w-4 mr-2" /> Unarchive
               </Button>
             )}
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleArchiveAssessment}
-              className="h-9 text-system-red-500 hover:text-system-red-600"
-            >
-              <Archive className="h-4 w-4 mr-2" /> Archive
-            </Button>
           </>
         )}
         

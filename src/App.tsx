@@ -33,6 +33,7 @@ import ScheduleInterview from "./pages/candidates/ScheduleInterview";
 import EditCandidate from "./pages/candidates/EditCandidate";
 import CreateAssessment from "./pages/assessments/CreateAssessment";
 import AssessmentDetails from "./pages/assessments/AssessmentDetails";
+import EditAssessment from "./pages/assessments/EditAssessment";
 
 const queryClient = new QueryClient();
 
@@ -134,7 +135,7 @@ const App = () => (
               } />
               <Route path="assessments/:assessmentId/edit" element={
                 <RoleBasedGuard allowedRoles={["hr", "admin"]}>
-                  <CreateAssessment />
+                  <EditAssessment />
                 </RoleBasedGuard>
               } />
               <Route path="assessments/:assessmentId/assign" element={
