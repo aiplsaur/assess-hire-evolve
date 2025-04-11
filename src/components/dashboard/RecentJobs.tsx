@@ -22,7 +22,6 @@ interface RecentJobsProps {
   className?: string;
 }
 
-// Helper function to safely format dates
 const formatDate = (dateString: string | null | undefined) => {
   if (!dateString) {
     return 'No date';
