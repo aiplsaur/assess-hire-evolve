@@ -45,10 +45,17 @@ interface Assessment {
 
 interface Result {
   id: string;
-  candidate_name: string;
+  candidate: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+    avatar_url?: string;
+  };
   score: number;
   status: string;
   completion_date: string;
+  completed_at?: string;
 }
 
 const getAssessmentTypeStyles = (type: string) => {
@@ -600,7 +607,7 @@ const AssessmentDetails: React.FC = () => {
                     <tbody className="bg-background divide-y divide-border">
                       {results.map((result) => (
                         <tr key={result.id}>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm">{result.candidate_name}</td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm">{result.candidate.first_name} {result.candidate.last_name}</td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm">
                             <span className={`font-medium ${result.score >= assessment.passing_score ? 'text-system-green-600' : 'text-system-red-500'}`}>
                               {result.score}%
@@ -618,10 +625,15 @@ const AssessmentDetails: React.FC = () => {
                             </Badge>
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-muted-foreground">
-                            {formatDate(result.completion_date, "MMM d, yyyy", "Not completed")}
+                            {formatDate(result.completed_at || result.completion_date, "MMM d, yyyy", "Not completed")}
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-right">
-                            <Button size="sm" variant="outline" className="h-8 text-xs">
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="h-8 text-xs"
+                              onClick={() => navigate(`/responses/${result.id}`)}
+                            >
                               View Details
                             </Button>
                           </td>

@@ -8,6 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 import { format, addHours, addDays, parseISO, isValid } from "date-fns";
 import { jobService, applicationService, interviewService } from "@/services";
 import { toast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 // Helper function to safely format dates
 const formatDate = (dateString: string) => {
@@ -36,6 +37,7 @@ const isDateInRange = (dateString: string, startDate: Date, endDate: Date) => {
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   
   // Show relevant dashboard based on role
   const renderRoleDashboard = () => {
@@ -70,6 +72,7 @@ const Dashboard: React.FC = () => {
 };
 
 const AdminDashboard: React.FC = () => {
+  const navigate = useNavigate();
   const [jobs, setJobs] = useState<any[]>([]);
   const [applications, setApplications] = useState<any[]>([]);
   const [interviews, setInterviews] = useState<any[]>([]);
@@ -130,24 +133,28 @@ const AdminDashboard: React.FC = () => {
           value={openPositions}
           icon={Building2}
           trend={{ value: 0, isPositive: true }}
+          onClick={() => navigate("/jobs")}
         />
         <StatCard
           title="Total Candidates"
           value={totalCandidates}
           icon={Users}
           trend={{ value: 0, isPositive: true }}
+          onClick={() => navigate("/candidates")}
         />
         <StatCard
           title="Scheduled Interviews"
           value={scheduledInterviews}
           icon={Calendar}
           trend={{ value: 0, isPositive: true }}
+          onClick={() => navigate("/interviews")}
         />
         <StatCard
           title="Assessments Completed"
           value={completedAssessments}
           icon={CheckSquare}
           trend={{ value: 0, isPositive: true }}
+          onClick={() => navigate("/assessments")}
         />
       </div>
       
@@ -166,6 +173,7 @@ const AdminDashboard: React.FC = () => {
 };
 
 const HRDashboard: React.FC = () => {
+  const navigate = useNavigate();
   const [jobs, setJobs] = useState<any[]>([]);
   const [applications, setApplications] = useState<any[]>([]);
   const [interviews, setInterviews] = useState<any[]>([]);
@@ -228,24 +236,28 @@ const HRDashboard: React.FC = () => {
           value={openPositions}
           icon={Building2}
           trend={{ value: 0, isPositive: true }}
+          onClick={() => navigate("/jobs")}
         />
         <StatCard
           title="Active Candidates"
           value={activeCandidates}
           icon={Users}
           trend={{ value: 0, isPositive: true }}
+          onClick={() => navigate("/candidates")}
         />
         <StatCard
           title="Scheduled Interviews"
           value={scheduledInterviews}
           icon={Calendar}
           trend={{ value: 0, isPositive: true }}
+          onClick={() => navigate("/interviews")}
         />
         <StatCard
           title="New Applications"
           value={newApplications}
           icon={CheckSquare}
           trend={{ value: 0, isPositive: true }}
+          onClick={() => navigate("/applications")}
         />
       </div>
       
@@ -263,6 +275,7 @@ const HRDashboard: React.FC = () => {
 // cdnsjvn
 const InterviewerDashboard: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [interviews, setInterviews] = useState<any[]>([]);
   const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -321,18 +334,21 @@ const InterviewerDashboard: React.FC = () => {
           value={weeklyInterviews}
           icon={Calendar}
           description="Scheduled for this week"
+          onClick={() => navigate("/interviews")}
         />
         <StatCard
           title="Pending Feedbacks"
           value={pendingFeedbacks}
           icon={CheckSquare}
           description="Awaiting your evaluation"
+          onClick={() => navigate("/interviews")}
         />
         <StatCard
           title="Candidates Evaluated"
           value={evaluatedCandidates}
           icon={Users}
           description="In the past 30 days"
+          onClick={() => navigate("/candidates")}
         />
       </div>
       
@@ -348,6 +364,7 @@ const InterviewerDashboard: React.FC = () => {
 
 const CandidateDashboard: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [applications, setApplications] = useState<any[]>([]);
   const [interviews, setInterviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -411,18 +428,21 @@ const CandidateDashboard: React.FC = () => {
           value={activeApplications}
           icon={Building2}
           description="Currently in progress"
+          onClick={() => navigate("/applications")}
         />
         <StatCard
           title="Scheduled Interviews"
           value={upcomingInterviews}
           icon={Calendar}
           description="In the next 7 days"
+          onClick={() => navigate("/interviews")}
         />
         <StatCard
           title="Pending Assessments"
           value={pendingAssessments}
           icon={CheckSquare}
           description="Ready to complete"
+          onClick={() => navigate("/assessments")}
         />
       </div>
       

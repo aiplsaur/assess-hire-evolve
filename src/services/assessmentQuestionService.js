@@ -231,22 +231,40 @@ export const assessmentQuestionService = {
       });
       
       // Get candidate information
-      const { data: application, error: applicationError } = await supabase
-        .from('applications')
-        .select(`
-          id,
-          profiles:candidate_id (
+      let candidateProfile = null;
+      
+      // Get candidate info from application
+      if (assignment.application_id) {
+        const { data: application, error: applicationError } = await supabase
+          .from('applications')
+          .select(`
             id,
-            first_name,
-            last_name,
-            email,
-            avatar_url
-          )
-        `)
-        .eq('id', assignment.application_id)
-        .single();
-        
-      if (applicationError) throw applicationError;
+            profiles:candidate_id (
+              id,
+              first_name,
+              last_name,
+              email,
+              avatar_url
+            )
+          `)
+          .eq('id', assignment.application_id)
+          .single();
+          
+        if (!applicationError && application && application.profiles) {
+          candidateProfile = application.profiles;
+        }
+      }
+      
+      // If still no candidate info, use a placeholder
+      if (!candidateProfile) {
+        candidateProfile = {
+          id: assignment.application_id || 'unknown',
+          first_name: 'Unknown',
+          last_name: 'Candidate',
+          email: '',
+          avatar_url: ''
+        };
+      }
       
       // Combine questions with responses
       const questionsWithResponses = questions.map(question => {
@@ -281,7 +299,7 @@ export const assessmentQuestionService = {
           type: assignment.assessments.type,
           passing_score: assignment.assessments.passing_score
         },
-        candidate: application.profiles,
+        candidate: candidateProfile,
         responses: questionsWithResponses,
         questionCount: questions.length,
         answeredCount: Object.keys(responses).length

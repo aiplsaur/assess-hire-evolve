@@ -133,7 +133,8 @@ const CandidateAssessments: React.FC = () => {
         return (
           <Button 
             variant="outline"
-            onClick={() => navigate(`/assessments/results/${assignment.id}`)}
+            onClick={() => navigate(`/responses/${assignment.id}`)}
+            className="border-system-blue-300 text-system-blue-700 hover:bg-system-blue-50"
           >
             <CheckCircle className="mr-2 h-4 w-4" />
             View Results

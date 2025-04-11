@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -14,6 +13,7 @@ interface StatCardProps {
     isPositive: boolean;
   };
   className?: string;
+  onClick?: () => void;
 }
 
 export const StatCard: React.FC<StatCardProps> = ({
@@ -23,9 +23,17 @@ export const StatCard: React.FC<StatCardProps> = ({
   icon: Icon,
   trend,
   className,
+  onClick,
 }) => {
   return (
-    <Card className={cn("dashboard-stat-card transition-all hover:shadow-md", className)}>
+    <Card 
+      className={cn(
+        "dashboard-stat-card transition-all",
+        onClick ? "hover:shadow-md hover:bg-muted/50 cursor-pointer" : "",
+        className
+      )}
+      onClick={onClick}
+    >
       <CardContent className="p-6">
         <div className="flex justify-between items-start">
           <div>

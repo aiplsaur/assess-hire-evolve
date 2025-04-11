@@ -273,34 +273,60 @@ export const assessmentService = {
       const resultsWithCandidateInfo = await Promise.all(
         assignments.map(async (assignment) => {
           try {
-            // Get candidate profile if candidate_id exists
-            if (assignment.candidate_id) {
-              const { data: candidateProfile, error: profileError } = await supabase
-                .from('profiles')
-                .select('id, first_name, last_name, email, avatar_url')
-                .eq('id', assignment.candidate_id)
+            // Get candidate info through application
+            if (assignment.application_id) {
+              const { data: application, error: applicationError } = await supabase
+                .from('applications')
+                .select(`
+                  id,
+                  profiles:candidate_id (
+                    id,
+                    first_name,
+                    last_name,
+                    email,
+                    avatar_url
+                  )
+                `)
+                .eq('id', assignment.application_id)
                 .single()
               
-              if (!profileError && candidateProfile) {
+              if (!applicationError && application && application.profiles) {
                 return {
                   ...assignment,
-                  candidate_name: `${candidateProfile.first_name} ${candidateProfile.last_name}`,
-                  candidate_email: candidateProfile.email,
-                  candidate_avatar: candidateProfile.avatar_url
+                  candidate: {
+                    id: application.profiles.id,
+                    first_name: application.profiles.first_name,
+                    last_name: application.profiles.last_name,
+                    email: application.profiles.email,
+                    avatar_url: application.profiles.avatar_url
+                  }
                 }
               }
             }
             
-            // If no candidate info found, return assignment as is
+            // If no candidate info found through application
             return {
               ...assignment,
-              candidate_name: 'Unknown Candidate',
-              candidate_email: '',
-              candidate_avatar: ''
+              candidate: {
+                id: assignment.application_id || 'unknown',
+                first_name: 'Unknown',
+                last_name: 'Candidate',
+                email: '',
+                avatar_url: ''
+              }
             }
           } catch (error) {
             console.error('Error fetching candidate profile:', error)
-            return assignment
+            return {
+              ...assignment,
+              candidate: {
+                id: assignment.application_id || 'unknown',
+                first_name: 'Unknown',
+                last_name: 'Candidate',
+                email: '',
+                avatar_url: ''
+              }
+            }
           }
         })
       )
@@ -312,12 +338,12 @@ export const assessmentService = {
   },
   
   // Assign assessment to candidates
-  async assignAssessment(assessmentId, candidateIds) {
+  async assignAssessment(assessmentId, applicationIds) {
     try {
-      const assignments = candidateIds.map(candidateId => ({
+      const assignments = applicationIds.map(applicationId => ({
         assessment_id: assessmentId,
-        candidate_id: candidateId,
-        status: 'assigned',
+        application_id: applicationId,
+        status: 'pending',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }))

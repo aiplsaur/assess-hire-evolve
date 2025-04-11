@@ -177,7 +177,7 @@ const App = () => (
                 </RoleBasedGuard>
               } />
               <Route path="responses/:assignmentId" element={
-                <RoleBasedGuard allowedRoles={["hr", "admin", "interviewer"]}>
+                <RoleBasedGuard allowedRoles={["hr", "admin", "interviewer", "candidate"]}>
                   <CandidateResponseDetails />
                 </RoleBasedGuard>
               } />
