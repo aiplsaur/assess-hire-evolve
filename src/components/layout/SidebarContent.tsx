@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { UserProfile } from "@/types";
@@ -84,14 +83,11 @@ export const SidebarContentComponent: React.FC<SidebarContentProps> = ({ user })
             <SidebarMenu>
               {menuItems().map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton>
-                    <button 
-                      className="flex items-center gap-3 w-full"
-                      onClick={() => navigate(item.url)}
-                    >
-                      <item.icon className="h-5 w-5" />
-                      <span>{item.title}</span>
-                    </button>
+                  <SidebarMenuButton
+                    onClick={() => navigate(item.url)}
+                  >
+                    <item.icon className="h-5 w-5" />
+                    <span>{item.title}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}

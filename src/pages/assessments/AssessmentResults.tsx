@@ -205,8 +205,8 @@ const AssessmentResults: React.FC = () => {
     }
   };
 
-  const handleViewCandidateResult = (resultId: string) => {
-    navigate(`/assessments/${assessmentId}/results/${resultId}`);
+  const handleViewCandidateResult = (assignmentId: string) => {
+    navigate(`/responses/${assignmentId}`);
   };
 
   if (loading) {

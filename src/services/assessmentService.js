@@ -605,5 +605,264 @@ export const assessmentService = {
       console.error("Error assigning assessment:", error);
       throw handleError(error, 'assignAssessmentToApplication');
     }
+  },
+  
+  // Methods for candidates taking assessments
+  async getAssessmentForTaking(assessmentId, assignmentId) {
+    try {
+      // First, verify the assignment exists
+      const { data: assignment, error: assignmentError } = await supabase
+        .from('assessment_assignments')
+        .select('id, assessment_id, status')
+        .eq('id', assignmentId)
+        .single();
+        
+      if (assignmentError) throw assignmentError;
+      
+      if (!assignment) {
+        throw new Error("Assessment assignment not found");
+      }
+
+      // Check if the status is valid for taking the assessment
+      if (assignment.status !== 'pending' && assignment.status !== 'in_progress') {
+        throw new Error("Assessment has already been completed or is not available");
+      }
+      
+      // Now get the assessment details
+      const { data: assessment, error: assessmentError } = await supabase
+        .from('assessments')
+        .select('id, title, description, type, duration_minutes, passing_score')
+        .eq('id', assessmentId)
+        .single();
+        
+      if (assessmentError) throw assessmentError;
+      
+      if (!assessment) {
+        throw new Error("Assessment not found");
+      }
+      
+      // Get questions based on assessment type
+      let questions = [];
+      
+      if (assessment.type === 'mcq') {
+        const { data: mcqQuestions, error: mcqError } = await supabase
+          .from('mcq_questions')
+          .select('*')
+          .eq('assessment_id', assessmentId);
+          
+        if (!mcqError && mcqQuestions) {
+          questions = mcqQuestions.map((q, index) => ({
+            id: q.id,
+            question: q.question,
+            type: 'mcq',
+            order_num: q.order_num || index,
+            options: Array.isArray(q.options) ? 
+              q.options.map((opt, idx) => ({
+                id: `${q.id}_opt_${idx}`,
+                text: opt
+              })) : 
+              [{ id: `${q.id}_default`, text: 'Sample option' }]
+          }));
+        }
+      } else if (assessment.type === 'coding') {
+        const { data: codingQuestions, error: codingError } = await supabase
+          .from('coding_questions')
+          .select('*')
+          .eq('assessment_id', assessmentId);
+          
+        if (!codingError && codingQuestions) {
+          questions = codingQuestions.map((q, index) => ({
+            id: q.id,
+            question: q.title || q.question || 'Coding question',
+            description: q.description,
+            type: 'coding',
+            order_num: q.order_num || index
+          }));
+        }
+      } else if (assessment.type === 'text') {
+        const { data: textQuestions, error: textError } = await supabase
+          .from('text_questions')
+          .select('*')
+          .eq('assessment_id', assessmentId);
+          
+        if (!textError && textQuestions) {
+          questions = textQuestions.map((q, index) => ({
+            id: q.id,
+            question: q.question,
+            type: 'text',
+            order_num: q.order_num || index
+          }));
+        }
+      }
+      
+      // If no questions found, create a sample question
+      if (questions.length === 0) {
+        console.warn(`No questions found for assessment ${assessmentId}`);
+        questions = [{
+          id: 'sample-question-1',
+          question: 'Sample question (No real questions found for this assessment)',
+          type: assessment.type,
+          order_num: 1,
+          options: assessment.type === 'mcq' ? [
+            { id: 'sample-opt-1', text: 'Option 1' },
+            { id: 'sample-opt-2', text: 'Option 2' }
+          ] : undefined
+        }];
+      }
+      
+      // Sort questions by order number
+      questions.sort((a, b) => (a.order_num || 0) - (b.order_num || 0));
+      
+      return {
+        ...assessment,
+        questions
+      };
+    } catch (error) {
+      console.error("Error getting assessment for taking:", error);
+      throw handleError(error, 'getAssessmentForTaking');
+    }
+  },
+  
+  async startAssessment(assignmentId) {
+    try {
+      const now = new Date().toISOString();
+      const { data, error } = await supabase
+        .from('assessment_assignments')
+        .update({
+          status: 'in_progress',
+          started_at: now
+        })
+        .eq('id', assignmentId)
+        .eq('status', 'pending')
+        .select();
+        
+      if (error) throw error;
+      
+      return data;
+    } catch (error) {
+      console.error("Error starting assessment:", error);
+      throw handleError(error, 'startAssessment');
+    }
+  },
+  
+  async submitAssessment(assignmentId, submissionData) {
+    try {
+      const now = new Date().toISOString();
+      let calculatedScore = null;
+      
+      // Get the assessment type
+      const { data: assignment, error: assignmentError } = await supabase
+        .from('assessment_assignments')
+        .select(`
+          assessment_id,
+          assessments!assessment_id (
+            type
+          )
+        `)
+        .eq('id', assignmentId)
+        .single();
+      
+      if (assignmentError) throw assignmentError;
+      
+      const assessmentType = assignment.assessments.type;
+      
+      // Import the assessment question service
+      const { assessmentQuestionService } = await import('./assessmentQuestionService');
+      
+      // Process MCQ answers
+      if (assessmentType === 'mcq') {
+        // Submit each MCQ answer
+        for (const answer of submissionData.answers) {
+          if (answer.answer !== null && answer.answer !== undefined) {
+            await assessmentQuestionService.submitMcqAnswer(
+              assignmentId,
+              answer.question_id,
+              answer.answer
+            );
+          }
+        }
+        
+        // Calculate the score automatically
+        const scoreResult = await assessmentQuestionService.calculateMcqScore(assignmentId);
+        calculatedScore = scoreResult.score;
+      }
+      
+      // Update assignment status to completed
+      const updateData = {
+        status: 'completed',
+        completed_at: now
+      };
+      
+      // Add score if it was calculated
+      if (calculatedScore !== null) {
+        updateData.score = calculatedScore;
+      }
+      
+      // Mark the assignment as completed
+      const { data, error } = await supabase
+        .from('assessment_assignments')
+        .update(updateData)
+        .eq('id', assignmentId)
+        .eq('status', 'in_progress')
+        .select();
+        
+      if (error) throw error;
+      
+      return {
+        ...data[0],
+        calculatedScore
+      };
+    } catch (error) {
+      console.error("Error submitting assessment:", error);
+      throw handleError(error, 'submitAssessment');
+    }
+  },
+
+  // Get assessments assigned to the current user
+  async getUserAssignments() {
+    try {
+      const { data: userProfile } = await supabase.auth.getUser();
+      
+      if (!userProfile || !userProfile.user) {
+        throw new Error("User not authenticated");
+      }
+      
+      const userId = userProfile.user.id;
+      
+      const { data, error } = await supabase
+        .from('assessment_assignments')
+        .select(`
+          id,
+          status,
+          score,
+          started_at,
+          completed_at,
+          created_at,
+          assessments!assessment_id (
+            id,
+            title,
+            description,
+            type,
+            duration_minutes,
+            passing_score
+          ),
+          applications!application_id (
+            id,
+            jobs (
+              id,
+              title
+            )
+          )
+        `)
+        .in('status', ['pending', 'in_progress', 'completed'])
+        .order('created_at', { ascending: false });
+        
+      if (error) throw error;
+      
+      return data;
+    } catch (error) {
+      console.error("Error getting user assignments:", error);
+      throw handleError(error, 'getUserAssignments');
+    }
   }
 } 

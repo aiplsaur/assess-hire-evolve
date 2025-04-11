@@ -8,18 +8,21 @@ import { Spinner } from "@/components/ui/spinner";
 import { assessmentService } from "@/services/assessmentService";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { ArrowLeft, Edit, Timer, CheckCircle, Copy, FileText, Send, Users, Eye, Archive } from "lucide-react";
+import { ArrowLeft, Edit, Timer, CheckCircle, Copy, FileText, Send, Users, Eye, Archive, PlusCircle } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { formatDate } from "@/utils/dateUtils";
 
 interface Question {
   id: string;
   question: string;
+  title?: string;
   type: string;
   options?: { text: string; isCorrect: boolean }[];
+  correct_option?: number;
   correct_answer?: string;
+  description?: string;
   points: number;
-  order_num: number;
+  order_num?: number;
 }
 
 interface Assessment {
@@ -32,7 +35,6 @@ interface Assessment {
   created_at: string;
   updated_at: string;
   status: "active" | "draft" | "archived";
-  coding_questions?: Question[];
   stats?: {
     questionCount: number;
     completionCount: number;
@@ -94,6 +96,8 @@ const AssessmentDetails: React.FC = () => {
   const { hasRole } = useAuth();
   
   const [assessment, setAssessment] = useState<Assessment | null>(null);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [questionsLoading, setQuestionsLoading] = useState(true);
   const [results, setResults] = useState<Result[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -139,6 +143,75 @@ const AssessmentDetails: React.FC = () => {
     
     fetchAssessmentData();
   }, [assessmentId]);
+  
+  // Fetch questions based on assessment type
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      if (!assessment || !assessmentId) return;
+      
+      try {
+        setQuestionsLoading(true);
+        let fetchedQuestions: Question[] = [];
+        
+        if (assessment.type === 'mcq') {
+          const mcqQuestions = await assessmentService.getMcqQuestions(assessmentId);
+          fetchedQuestions = (mcqQuestions || []).map((q: any) => ({
+            id: q.id,
+            question: q.question,
+            type: 'mcq',
+            points: q.points || 1,
+            options: Array.isArray(q.options) ? q.options.map((option: string, index: number) => ({
+              text: option,
+              isCorrect: index === q.correct_option
+            })) : [],
+            correct_option: q.correct_option,
+            order_num: q.order_num
+          }));
+        } else if (assessment.type === 'coding') {
+          const codingQuestions = await assessmentService.getCodingQuestions(assessmentId);
+          fetchedQuestions = (codingQuestions || []).map((q: any) => ({
+            id: q.id,
+            question: q.title || 'Coding Challenge',
+            title: q.title,
+            description: q.description,
+            type: 'coding',
+            points: q.points || 1,
+            starter_code: q.starter_code,
+            test_cases: q.test_cases,
+            order_num: q.order_num
+          }));
+        } else if (assessment.type === 'text') {
+          const textQuestions = await assessmentService.getTextQuestions(assessmentId);
+          fetchedQuestions = (textQuestions || []).map((q: any) => ({
+            id: q.id,
+            question: q.question,
+            type: 'text',
+            points: q.points || 1,
+            word_limit: q.word_limit,
+            order_num: q.order_num
+          }));
+        }
+        
+        // Sort questions by order number if available
+        fetchedQuestions.sort((a, b) => {
+          return (a.order_num || 0) - (b.order_num || 0);
+        });
+        
+        setQuestions(fetchedQuestions);
+      } catch (error) {
+        console.error(`Error fetching ${assessment.type} questions:`, error);
+        toast({
+          title: "Error",
+          description: `Failed to load questions. Please try again.`,
+          variant: "destructive",
+        });
+      } finally {
+        setQuestionsLoading(false);
+      }
+    };
+    
+    fetchQuestions();
+  }, [assessment, assessmentId]);
   
   const handleEditAssessment = () => {
     navigate(`/assessments/${assessmentId}/edit`);
@@ -237,32 +310,36 @@ const AssessmentDetails: React.FC = () => {
   
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-12">
-        <Spinner size="lg" />
+      <div className="container mx-auto py-6">
+        <div className="flex justify-center items-center py-12">
+          <Spinner size="lg" />
+        </div>
       </div>
     );
   }
   
   if (!assessment) {
     return (
-      <div className="text-center py-12">
-        <h2 className="text-2xl font-bold mb-2">Assessment Not Found</h2>
-        <p className="text-muted-foreground mb-6">
-          The assessment you're looking for doesn't exist or has been removed.
-        </p>
-        <Button 
-          variant="default" 
-          onClick={() => navigate("/assessments")}
-          className="bg-system-blue-600 hover:bg-system-blue-700"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Assessments
-        </Button>
+      <div className="container mx-auto py-6">
+        <div className="text-center py-12">
+          <h2 className="text-2xl font-bold mb-2">Assessment Not Found</h2>
+          <p className="text-muted-foreground mb-6">
+            The assessment you're looking for doesn't exist or has been removed.
+          </p>
+          <Button 
+            variant="default" 
+            onClick={() => navigate("/assessments")}
+            className="bg-system-blue-600 hover:bg-system-blue-700"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" /> Back to Assessments
+          </Button>
+        </div>
       </div>
     );
   }
   
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto py-6">
       <div className="flex items-center gap-2">
         <Button
           variant="ghost"
@@ -296,7 +373,7 @@ const AssessmentDetails: React.FC = () => {
         </div>
       </div>
       
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 mt-6">
         {hasRole(["admin", "hr"]) && (
           <>
             {assessment.status !== "archived" ? (
@@ -358,7 +435,7 @@ const AssessmentDetails: React.FC = () => {
         </Button>
       </div>
       
-      <Card>
+      <Card className="mt-6">
         <CardHeader className="pb-3">
           <CardTitle>Assessment Information</CardTitle>
         </CardHeader>
@@ -388,14 +465,14 @@ const AssessmentDetails: React.FC = () => {
                 <FileText className="h-4 w-4 mr-2 text-muted-foreground" /> Questions
               </span>
               <span className="text-sm text-muted-foreground">
-                {assessment.stats?.questionCount || 0} questions
+                {questions.length || assessment.stats?.questionCount || 0} questions
               </span>
             </div>
           </div>
         </CardContent>
       </Card>
       
-      <Tabs defaultValue="questions" className="w-full">
+      <Tabs defaultValue="questions" className="w-full mt-6">
         <TabsList className="grid grid-cols-3 mb-4">
           <TabsTrigger value="questions">
             <FileText className="h-4 w-4 mr-2" /> Questions
@@ -409,52 +486,78 @@ const AssessmentDetails: React.FC = () => {
         </TabsList>
         
         <TabsContent value="questions" className="space-y-4">
-          {assessment.coding_questions && assessment.coding_questions.length > 0 ? (
-            assessment.coding_questions.map((question, index) => (
-              <Card key={question.id}>
-                <CardHeader className="pb-2">
-                  <div className="flex justify-between">
-                    <CardTitle className="text-base">Question {index + 1}</CardTitle>
-                    <Badge variant="outline" className={getAssessmentTypeStyles(question.type)}>
-                      {getAssessmentTypeLabel(question.type)}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm mb-4">{question.question}</p>
-                  
-                  {question.type === "mcq" && question.options && (
-                    <div className="space-y-2 pl-4">
-                      {question.options.map((option, idx) => (
-                        <div 
-                          key={idx} 
-                          className={`text-sm p-2 rounded-md ${
-                            option.isCorrect 
-                              ? "bg-system-green-50 border border-system-green-200" 
-                              : "bg-system-gray-50 border border-system-gray-200"
-                          }`}
-                        >
-                          {option.text} {option.isCorrect && (
-                            <span className="text-system-green-500 font-medium ml-2">(Correct)</span>
-                          )}
-                        </div>
-                      ))}
+          {questionsLoading ? (
+            <div className="flex justify-center items-center py-6">
+              <Spinner size="md" />
+            </div>
+          ) : questions.length > 0 ? (
+            <>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium">Questions ({questions.length})</h3>
+                {hasRole(["admin", "hr"]) && assessment.status !== "archived" && (
+                  <Button 
+                    onClick={handleEditAssessment}
+                    size="sm"
+                    className="h-9"
+                  >
+                    <PlusCircle className="h-4 w-4 mr-2" /> Add Questions
+                  </Button>
+                )}
+              </div>
+              
+              {questions.map((question, index) => (
+                <Card key={question.id}>
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between">
+                      <CardTitle className="text-base">Question {index + 1}</CardTitle>
+                      <Badge variant="outline" className={getAssessmentTypeStyles(question.type)}>
+                        {getAssessmentTypeLabel(question.type)}
+                      </Badge>
                     </div>
-                  )}
-                  
-                  {question.type !== "mcq" && question.correct_answer && (
-                    <div className="mt-2">
-                      <h4 className="text-sm font-medium">Expected Answer:</h4>
-                      <p className="text-sm text-muted-foreground mt-1">{question.correct_answer}</p>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm mb-4">{question.question}</p>
+                    
+                    {assessment.type === "mcq" && question.options && (
+                      <div className="space-y-2 pl-4">
+                        {question.options.map((option, idx) => (
+                          <div 
+                            key={idx} 
+                            className={`text-sm p-2 rounded-md ${
+                              option.isCorrect 
+                                ? "bg-system-green-50 border border-system-green-200" 
+                                : "bg-system-gray-50 border border-system-gray-200"
+                            }`}
+                          >
+                            {option.text} {option.isCorrect && (
+                              <span className="text-system-green-500 font-medium ml-2">(Correct)</span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {assessment.type === "coding" && question.description && (
+                      <div className="mt-2">
+                        <h4 className="text-sm font-medium">Description:</h4>
+                        <p className="text-sm text-muted-foreground mt-1">{question.description}</p>
+                      </div>
+                    )}
+                    
+                    {question.type !== "mcq" && question.correct_answer && (
+                      <div className="mt-2">
+                        <h4 className="text-sm font-medium">Expected Answer:</h4>
+                        <p className="text-sm text-muted-foreground mt-1">{question.correct_answer}</p>
+                      </div>
+                    )}
+                    
+                    <div className="mt-4 text-sm text-muted-foreground">
+                      Points: <span className="font-medium">{question.points}</span>
                     </div>
-                  )}
-                  
-                  <div className="mt-4 text-sm text-muted-foreground">
-                    Points: <span className="font-medium">{question.points}</span>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
+                  </CardContent>
+                </Card>
+              ))}
+            </>
           ) : (
             <div className="text-center py-8 bg-muted/20 rounded-lg">
               <h3 className="text-lg font-medium mb-2">No Questions Added</h3>
@@ -600,7 +703,7 @@ const AssessmentDetails: React.FC = () => {
                 <div className="space-y-4">
                   <div>
                     <p className="text-sm font-medium">Questions</p>
-                    <p className="text-3xl font-bold">{assessment.stats?.questionCount || 0}</p>
+                    <p className="text-3xl font-bold">{questions.length || assessment.stats?.questionCount || 0}</p>
                   </div>
                   
                   <div>
