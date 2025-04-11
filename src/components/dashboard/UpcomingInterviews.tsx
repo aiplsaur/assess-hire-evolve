@@ -74,9 +74,6 @@ export const UpcomingInterviews: React.FC<UpcomingInterviewsProps> = ({
   const [applicationsData, setApplicationsData] = React.useState<{[key: string]: any}>({});
 
   useEffect(() => {
-    // Debug: Log the raw interviews data to see the structure
-    console.log("Interviews raw data:", JSON.stringify(interviews, null, 2));
-    
     // If we have interviews with application_id but no applications data,
     // fetch the missing application information
     const fetchMissingApplications = async () => {
@@ -122,8 +119,6 @@ export const UpcomingInterviews: React.FC<UpcomingInterviewsProps> = ({
         ) : (
           <div className="space-y-4">
             {interviews.map((interview) => {
-              // Debug
-              console.log("Processing interview:", interview.id);
               
               let candidateName = "Upcoming Interview";
               let avatarUrl = "";
