@@ -48,6 +48,29 @@ export const interviewService = {
     }
   },
   
+  async getInterviewById(interviewId) {
+    try {
+      const { data, error } = await supabase
+        .from('interviews')
+        .select(`
+          *,
+          profiles!interviewer_id (id, first_name, last_name, email, role, avatar_url),
+          applications (
+            id,
+            profiles!candidate_id (id, first_name, last_name, email, avatar_url),
+            jobs (id, title, department)
+          )
+        `)
+        .eq('id', interviewId)
+        .single()
+      
+      if (error) throw error
+      return data
+    } catch (error) {
+      throw handleError(error, 'getInterviewById')
+    }
+  },
+  
   async getInterviewsByInterviewer(interviewerId) {
     try {
       const { data, error } = await supabase

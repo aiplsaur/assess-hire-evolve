@@ -1,26 +1,58 @@
-
-import React from "react";
+import React, { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar, Clock, MapPin, Video } from "lucide-react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
+import { applicationService } from "@/services";
 
+// Updated interface to match the actual API response structures from getInterviewsByApplication and getAllInterviews
 interface Interview {
   id: string;
-  candidate: {
+  application_id?: string;
+  applications?: {
     id: string;
-    name: string;
+    profiles?: {
+      id: string;
+      first_name: string;
+      last_name: string;
+      email?: string;
+      avatar_url?: string;
+    };
+    jobs?: {
+      id: string;
+      title: string;
+      department?: string;
+    };
+    candidate_id?: string;
+  };
+  profiles?: { // Interviewer profile
+    id: string;
+    first_name: string;
+    last_name: string;
+    email?: string;
+    role?: string;
+    avatar_url?: string;
+  };
+  // From getAllInterviews transformed data
+  candidate?: {
+    id: string;
+    name?: string;
     avatar?: string;
   };
-  position: string;
-  scheduledAt: Date;
-  duration: number; // minutes
+  position?: string;
+  scheduledAt?: Date;
+  interviewer_id?: string;
+  scheduled_at: string;
+  duration_minutes: number;
+  duration?: number; // From transformed data
   type: "remote" | "onsite";
   location?: string;
-  meetingLink?: string;
+  meeting_link?: string;
+  meetingLink?: string; // From transformed data
+  status: string;
 }
 
 interface UpcomingInterviewsProps {
@@ -28,18 +60,55 @@ interface UpcomingInterviewsProps {
   className?: string;
 }
 
-const getInitials = (name: string) => {
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase();
+const getInitials = (firstName: string = "", lastName: string = "") => {
+  const first = firstName ? firstName[0] : "";
+  const last = lastName ? lastName[0] : "";
+  return (first + last).toUpperCase();
 };
 
 export const UpcomingInterviews: React.FC<UpcomingInterviewsProps> = ({
   interviews,
   className,
 }) => {
+  // Track additional application data that we may need to fetch
+  const [applicationsData, setApplicationsData] = React.useState<{[key: string]: any}>({});
+
+  useEffect(() => {
+    // Debug: Log the raw interviews data to see the structure
+    console.log("Interviews raw data:", JSON.stringify(interviews, null, 2));
+    
+    // If we have interviews with application_id but no applications data,
+    // fetch the missing application information
+    const fetchMissingApplications = async () => {
+      const missingAppIds = interviews
+        .filter(interview => interview.application_id && !interview.applications)
+        .map(interview => interview.application_id as string);
+      
+      if (missingAppIds.length === 0) return;
+      
+      try {
+        // Fetch each application that we're missing
+        const appData: {[key: string]: any} = {};
+        for (const appId of missingAppIds) {
+          try {
+            const app = await applicationService.getApplicationById(appId);
+            if (app) {
+              appData[appId] = app;
+            }
+          } catch (error) {
+            console.error(`Error fetching application ${appId}:`, error);
+          }
+        }
+        
+        setApplicationsData(appData);
+      } catch (error) {
+        console.error("Error fetching missing applications:", error);
+      }
+    };
+    
+    fetchMissingApplications();
+  }, [interviews]);
+
   return (
     <Card className={cn("h-full", className)}>
       <CardHeader>
@@ -52,87 +121,165 @@ export const UpcomingInterviews: React.FC<UpcomingInterviewsProps> = ({
           </div>
         ) : (
           <div className="space-y-4">
-            {interviews.map((interview) => (
-              <div
-                key={interview.id}
-                className="flex items-start p-3 rounded-lg border border-border bg-background hover:bg-muted/50 transition-colors"
-              >
-                <Avatar className="h-10 w-10 mr-3">
-                  <AvatarImage
-                    src={interview.candidate.avatar}
-                    alt={interview.candidate.name}
-                  />
-                  <AvatarFallback className="bg-system-blue-100 text-system-blue-600">
-                    {getInitials(interview.candidate.name)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-medium truncate">
-                      {interview.candidate.name}
-                    </h4>
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        interview.type === "remote"
-                          ? "bg-system-blue-100 text-system-blue-600 border-system-blue-200"
-                          : "bg-system-green-100 text-system-green-600 border-system-green-200"
-                      )}
-                    >
-                      {interview.type === "remote" ? "Remote" : "Onsite"}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground truncate">
-                    {interview.position}
-                  </p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <div className="flex items-center text-xs text-muted-foreground">
-                      <Calendar className="h-3 w-3 mr-1" />
-                      {format(interview.scheduledAt, "MMM d, yyyy")}
+            {interviews.map((interview) => {
+              // Debug
+              console.log("Processing interview:", interview.id);
+              
+              let candidateName = "Upcoming Interview";
+              let avatarUrl = "";
+              let firstName = "";
+              let lastName = "";
+              let jobTitle = "Interview";
+              
+              // Try to get the application data if we fetched it separately
+              const applicationData = interview.application_id 
+                ? applicationsData[interview.application_id] 
+                : null;
+              
+              // Case 1: Format from getAllInterviews transformed data
+              if (interview.candidate) {
+                candidateName = interview.candidate.name || "Upcoming Interview";
+                avatarUrl = interview.candidate.avatar || "";
+                jobTitle = interview.position || "Interview";
+                
+                // Try to extract first/last name for initials
+                const nameParts = candidateName.split(" ");
+                if (nameParts.length > 0) {
+                  firstName = nameParts[0] || "";
+                  lastName = nameParts.slice(1).join(" ") || "";
+                }
+              } 
+              // Case 2: Format from getInterviewsByApplication or getInterviewsByInterviewer
+              else if (interview.applications?.profiles) {
+                const profile = interview.applications.profiles;
+                firstName = profile.first_name || "";
+                lastName = profile.last_name || "";
+                candidateName = `${firstName} ${lastName}`.trim();
+                avatarUrl = profile.avatar_url || "";
+                jobTitle = interview.applications.jobs?.title || "Interview";
+              }
+              // Case 3: We have application_id and fetched the data separately
+              else if (applicationData) {
+                const profile = applicationData.profiles;
+                if (profile) {
+                  firstName = profile.first_name || "";
+                  lastName = profile.last_name || "";
+                  candidateName = `${firstName} ${lastName}`.trim();
+                  avatarUrl = profile.avatar_url || "";
+                }
+                if (applicationData.jobs) {
+                  jobTitle = applicationData.jobs.title || "Interview";
+                }
+              }
+              // Case 4: We only have interviewer data but not candidate
+              else {
+                // Use interview ID or application ID as placeholder
+                candidateName = "Scheduled Interview";
+                jobTitle = "Interview";
+                
+                // If we have an interviewer's profile, at least show who they'll be meeting with
+                if (interview.profiles && interview.profiles.role === "interviewer") {
+                  const interviewer = interview.profiles;
+                  jobTitle = `Interview with ${interviewer.first_name} ${interviewer.last_name}`;
+                }
+              }
+              
+              // Handle different date and duration field formats
+              const scheduledDate = interview.scheduledAt 
+                ? interview.scheduledAt 
+                : (interview.scheduled_at ? parseISO(interview.scheduled_at) : new Date());
+              
+              const duration = interview.duration || interview.duration_minutes || 30;
+              
+              // Handle different field names for meeting link
+              const meetingLink = interview.meetingLink || interview.meeting_link;
+
+              return (
+                <div
+                  key={interview.id}
+                  className="flex items-start p-3 rounded-lg border border-border bg-background hover:bg-muted/50 transition-colors"
+                >
+                  <Avatar className="h-10 w-10 mr-3">
+                    <AvatarImage
+                      src={avatarUrl}
+                      alt={candidateName}
+                    />
+                    <AvatarFallback className="bg-system-blue-100 text-system-blue-600">
+                      {getInitials(firstName, lastName)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium truncate">
+                        {candidateName}
+                      </h4>
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          interview.type === "remote"
+                            ? "bg-system-blue-100 text-system-blue-600 border-system-blue-200"
+                            : "bg-system-green-100 text-system-green-600 border-system-green-200"
+                        )}
+                      >
+                        {interview.type === "remote" ? "Remote" : "Onsite"}
+                      </Badge>
                     </div>
-                    <div className="flex items-center text-xs text-muted-foreground">
-                      <Clock className="h-3 w-3 mr-1" />
-                      {format(interview.scheduledAt, "h:mm a")} (
-                      {interview.duration} min)
-                    </div>
-                    {interview.type === "remote" && interview.meetingLink ? (
-                      <div className="flex items-center text-xs text-system-blue-600">
-                        <Video className="h-3 w-3 mr-1" />
-                        Video Call
+                    <p className="text-sm text-muted-foreground truncate">
+                      {jobTitle}
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <div className="flex items-center text-xs text-muted-foreground">
+                        <Calendar className="h-3 w-3 mr-1" />
+                        {format(scheduledDate, "MMM d, yyyy")}
                       </div>
-                    ) : (
-                      interview.location && (
-                        <div className="flex items-center text-xs text-muted-foreground">
-                          <MapPin className="h-3 w-3 mr-1" />
-                          {interview.location}
+                      <div className="flex items-center text-xs text-muted-foreground">
+                        <Clock className="h-3 w-3 mr-1" />
+                        {format(scheduledDate, "h:mm a")} ({duration} min)
+                      </div>
+                      {interview.type === "remote" && meetingLink ? (
+                        <div className="flex items-center text-xs text-system-blue-600">
+                          <Video className="h-3 w-3 mr-1" />
+                          Video Call
                         </div>
-                      )
-                    )}
-                  </div>
-                  <div className="mt-2 flex space-x-2">
-                    {interview.type === "remote" && interview.meetingLink && (
+                      ) : (
+                        interview.location && (
+                          <div className="flex items-center text-xs text-muted-foreground">
+                            <MapPin className="h-3 w-3 mr-1" />
+                            {interview.location}
+                          </div>
+                        )
+                      )}
+                    </div>
+                    <div className="mt-2 flex space-x-2">
+                      {interview.type === "remote" && meetingLink && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-xs h-7 px-2"
+                          onClick={() => window.open(meetingLink, "_blank")}
+                        >
+                          Join Call
+                        </Button>
+                      )}
                       <Button
                         size="sm"
                         variant="outline"
                         className="text-xs h-7 px-2"
-                        onClick={() => window.open(interview.meetingLink, "_blank")}
+                        onClick={() => window.location.href = `/interviews/${interview.id}`}
                       >
-                        Join Call
+                        View Details
                       </Button>
-                    )}
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-xs h-7 px-2"
-                    >
-                      View Details
-                    </Button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             <div className="text-center pt-2">
-              <Button variant="link" className="text-system-blue-600">
+              <Button 
+                variant="link" 
+                className="text-system-blue-600"
+                onClick={() => window.location.href = "/interviews"}
+              >
                 View All Interviews
               </Button>
             </div>

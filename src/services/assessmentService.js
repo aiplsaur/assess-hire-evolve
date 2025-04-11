@@ -584,5 +584,26 @@ export const assessmentService = {
     } catch (error) {
       throw handleError(error, 'updateAssessmentAssignmentStatus')
     }
+  },
+  
+  // Add the assignAssessmentToApplication method
+  async assignAssessmentToApplication(assessmentId, applicationId) {
+    try {
+      const { data, error } = await supabase
+        .from('assessment_assignments')
+        .insert({
+          assessment_id: assessmentId,
+          application_id: applicationId,
+          status: 'pending',
+        })
+        .select();
+
+      if (error) throw error;
+
+      return data;
+    } catch (error) {
+      console.error("Error assigning assessment:", error);
+      throw handleError(error, 'assignAssessmentToApplication');
+    }
   }
 } 

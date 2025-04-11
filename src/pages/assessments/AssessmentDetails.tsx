@@ -10,6 +10,7 @@ import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ArrowLeft, Edit, Timer, CheckCircle, Copy, FileText, Send, Users, Eye, Archive } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { formatDate } from "@/utils/dateUtils";
 
 interface Question {
   id: string;
@@ -289,8 +290,8 @@ const AssessmentDetails: React.FC = () => {
             </div>
           </div>
           <p className="text-muted-foreground mt-1">
-            Created {format(new Date(assessment.created_at), "MMM d, yyyy")} • 
-            Last updated {format(new Date(assessment.updated_at), "MMM d, yyyy")}
+            Created {formatDate(assessment.created_at)} •
+            Last updated {formatDate(assessment.updated_at)}
           </p>
         </div>
       </div>
@@ -514,7 +515,7 @@ const AssessmentDetails: React.FC = () => {
                             </Badge>
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-muted-foreground">
-                            {format(new Date(result.completion_date), "MMM d, yyyy")}
+                            {formatDate(result.completion_date, "MMM d, yyyy", "Not completed")}
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-right">
                             <Button size="sm" variant="outline" className="h-8 text-xs">

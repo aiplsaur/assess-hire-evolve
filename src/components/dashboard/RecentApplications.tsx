@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,22 +5,28 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ApplicationStatus } from "@/types";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
+import { Link } from "react-router-dom";
 
-interface Candidate {
-  id: string;
-  name: string;
-  avatar?: string;
-  email: string;
-}
-
+// Modified to match the actual data structure from the API
 interface Application {
   id: string;
-  jobTitle: string;
-  department: string;
-  candidate: Candidate;
-  status: ApplicationStatus;
-  appliedAt: Date;
+  job_id: string;
+  candidate_id: string;
+  status: string;
+  applied_at: string;
+  updated_at: string;
+  jobs?: {
+    title: string;
+    department: string;
+  };
+  profiles?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+    avatar_url?: string;
+  };
 }
 
 interface RecentApplicationsProps {
@@ -29,7 +34,7 @@ interface RecentApplicationsProps {
   className?: string;
 }
 
-const getStatusStyles = (status: ApplicationStatus) => {
+const getStatusStyles = (status: string) => {
   switch (status) {
     case "applied":
       return "bg-system-blue-100 text-system-blue-600 border-system-blue-200";
@@ -52,35 +57,14 @@ const getStatusStyles = (status: ApplicationStatus) => {
   }
 };
 
-const getStatusLabel = (status: ApplicationStatus) => {
-  switch (status) {
-    case "applied":
-      return "Applied";
-    case "screening":
-      return "Screening";
-    case "assessment":
-      return "Assessment";
-    case "interview_scheduled":
-      return "Interview Scheduled";
-    case "interview_completed":
-      return "Interview Completed";
-    case "offered":
-      return "Offered";
-    case "hired":
-      return "Hired";
-    case "rejected":
-      return "Rejected";
-    default:
-      return status;
-  }
+const getStatusLabel = (status: string) => {
+  return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 };
 
-const getInitials = (name: string) => {
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase();
+const getInitials = (firstName: string = "", lastName: string = "") => {
+  const first = firstName.charAt(0) || "";
+  const last = lastName.charAt(0) || "";
+  return (first + last).toUpperCase();
 };
 
 export const RecentApplications: React.FC<RecentApplicationsProps> = ({
@@ -106,17 +90,17 @@ export const RecentApplications: React.FC<RecentApplicationsProps> = ({
               >
                 <Avatar className="h-10 w-10 mr-3">
                   <AvatarImage
-                    src={application.candidate.avatar}
-                    alt={application.candidate.name}
+                    src={application.profiles?.avatar_url}
+                    alt={application.profiles ? `${application.profiles.first_name} ${application.profiles.last_name}` : "User"}
                   />
                   <AvatarFallback className="bg-system-blue-100 text-system-blue-600">
-                    {getInitials(application.candidate.name)}
+                    {application.profiles ? getInitials(application.profiles.first_name, application.profiles.last_name) : "U"}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
                     <h4 className="font-medium truncate">
-                      {application.candidate.name}
+                      {application.profiles ? `${application.profiles.first_name} ${application.profiles.last_name}` : "Unknown User"}
                     </h4>
                     <Badge
                       variant="outline"
@@ -126,19 +110,21 @@ export const RecentApplications: React.FC<RecentApplicationsProps> = ({
                     </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground truncate">
-                    {application.jobTitle} • {application.department}
+                    {application.jobs?.title || 'Unknown Position'} {application.jobs?.department ? `• ${application.jobs.department}` : ''}
                   </p>
                   <div className="mt-1 flex items-center text-xs text-muted-foreground">
-                    Applied {format(application.appliedAt, "MMM d, yyyy")}
+                    Applied {application.applied_at ? format(parseISO(application.applied_at), "MMM d, yyyy") : "N/A"}
                   </div>
                   <div className="mt-2 flex space-x-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-xs h-7 px-2"
-                    >
-                      View Profile
-                    </Button>
+                    <Link to={`/applications/${application.id}`}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-xs h-7 px-2"
+                      >
+                        View Details
+                      </Button>
+                    </Link>
                     {application.status === "applied" && (
                       <Button
                         size="sm"
@@ -152,9 +138,11 @@ export const RecentApplications: React.FC<RecentApplicationsProps> = ({
               </div>
             ))}
             <div className="text-center pt-2">
-              <Button variant="link" className="text-system-blue-600">
-                View All Applications
-              </Button>
+              <Link to="/applications">
+                <Button variant="link" className="text-system-blue-600">
+                  View All Applications
+                </Button>
+              </Link>
             </div>
           </div>
         )}

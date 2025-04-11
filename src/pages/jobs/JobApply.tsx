@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { ArrowLeft, Upload, Briefcase, Building2 } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import { format, parseISO } from "date-fns";
+import { supabase } from "@/services/supabase";
 
 const JobApply: React.FC = () => {
   const { jobId } = useParams<{ jobId: string }>();
@@ -22,6 +23,7 @@ const JobApply: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [coverLetter, setCoverLetter] = useState("");
   const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
   
   useEffect(() => {
     const fetchJobDetails = async () => {
@@ -61,6 +63,30 @@ const JobApply: React.FC = () => {
     fetchJobDetails();
   }, [jobId, user?.id, navigate]);
   
+  const uploadResume = async (file: File): Promise<string> => {
+    try {
+      // Create a unique file name to avoid collisions
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user?.id}_${Date.now()}.${fileExt}`;
+      const filePath = `${fileName}`;
+      
+      // Upload file to Supabase Storage
+      const { data, error } = await supabase.storage
+        .from('resumes')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+      
+      if (error) throw error;
+      
+      return filePath;
+    } catch (error) {
+      console.error("Error uploading resume:", error);
+      throw new Error("Failed to upload resume file");
+    }
+  };
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -79,9 +105,8 @@ const JobApply: React.FC = () => {
       // Upload resume if provided
       let resumeUrl = null;
       if (resumeFile) {
-        // This is a simplified example - in a real app you'd upload to a storage service
-        // resumeUrl = await uploadResume(resumeFile);
-        resumeUrl = "example-resume-url.pdf"; // Mock URL for now
+        // Upload to Supabase Storage
+        resumeUrl = await uploadResume(resumeFile);
       }
       
       // First check if already applied to prevent duplicate submissions
