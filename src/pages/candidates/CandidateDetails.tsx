@@ -28,6 +28,7 @@ import { format } from "date-fns";
 import { Spinner } from "@/components/ui/spinner";
 import { ApplicationStatus } from "@/types";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
 
 // Helper functions
 const getInitials = (name: string) => {
@@ -150,7 +151,10 @@ const CandidateDetails: React.FC = () => {
   const navigate = useNavigate();
   const { user, hasRole } = useAuth();
   const [candidate, setCandidate] = useState<Candidate | null>(null);
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [interviews, setInterviews] = useState<Interview[]>([]);
   const [loading, setLoading] = useState(true);
+  const [resumeUrls, setResumeUrls] = useState<Record<string, string>>({});
   
   useEffect(() => {
     const fetchCandidateDetails = async () => {
@@ -160,6 +164,8 @@ const CandidateDetails: React.FC = () => {
         setLoading(true);
         const data = await candidateService.getCandidateById(candidateId);
         setCandidate(data);
+        setApplications(data.applications);
+        setInterviews(data.applications.flatMap(app => app.interviews || []));
       } catch (error) {
         console.error("Error fetching candidate details:", error);
         toast({
@@ -181,6 +187,68 @@ const CandidateDetails: React.FC = () => {
   
   const handleEditCandidate = () => {
     navigate(`/candidates/${candidateId}/edit`);
+  };
+  
+  // Function to get a temporary URL for the resume
+  const getResumeUrl = async (path: string) => {
+    try {
+      // If it's already a full URL, return it
+      if (path.startsWith('http')) {
+        return path;
+      }
+      
+      // Otherwise, get a signed URL from Supabase
+      const { data, error } = await supabase.storage
+        .from('resumes')
+        .createSignedUrl(path, 60); // URL valid for 60 seconds
+      
+      if (error) {
+        console.error("Error getting resume URL:", error);
+        return null;
+      }
+      
+      return data.signedUrl;
+    } catch (err) {
+      console.error("Error generating resume URL:", err);
+      return null;
+    }
+  };
+
+  // Handle viewing a resume
+  const handleViewResume = async (e: React.MouseEvent, resumePath: string) => {
+    e.stopPropagation();
+    
+    try {
+      // Check if we already have a signed URL for this resume
+      if (resumeUrls[resumePath]) {
+        window.open(resumeUrls[resumePath], '_blank');
+        return;
+      }
+      
+      // Get a new signed URL
+      const signedUrl = await getResumeUrl(resumePath);
+      if (signedUrl) {
+        // Store the signed URL for future use
+        setResumeUrls(prev => ({
+          ...prev,
+          [resumePath]: signedUrl
+        }));
+        window.open(signedUrl, '_blank');
+      } else {
+        toast({
+          title: "Error",
+          description: "Unable to access the resume file.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error viewing resume:", error);
+      toast({
+        title: "Error",
+        description: "Failed to open the resume file.",
+        variant: "destructive",
+      });
+    }
   };
   
   if (loading) {
@@ -209,7 +277,7 @@ const CandidateDetails: React.FC = () => {
     );
   }
   
-  const sortedApplications = [...candidate.applications].sort(
+  const sortedApplications = [...applications].sort(
     (a, b) => new Date(b.applied_at).getTime() - new Date(a.applied_at).getTime()
   );
   
@@ -377,7 +445,7 @@ const CandidateDetails: React.FC = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => window.open(application.resume_url, '_blank')}
+                          onClick={(e) => handleViewResume(e, application.resume_url)}
                           className="h-8 text-xs"
                         >
                           <FileText className="h-3 w-3 mr-1" /> Resume

@@ -12,6 +12,7 @@ import { ApplicationStatus } from "@/types";
 import { candidateService } from "@/services/candidateService";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "@/components/ui/use-toast";
+import { supabase } from "@/lib/supabase";
 
 interface Candidate {
   id: string;
@@ -97,6 +98,68 @@ const Candidates: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filteredCandidates, setFilteredCandidates] = useState<Candidate[]>([]);
+  const [resumeUrls, setResumeUrls] = useState<Record<string, string>>({});
+
+  const getResumeUrl = async (path: string) => {
+    try {
+      // If it's already a full URL, return it
+      if (path.startsWith('http')) {
+        return path;
+      }
+      
+      // Otherwise, get a signed URL from Supabase
+      const { data, error } = await supabase.storage
+        .from('resumes')
+        .createSignedUrl(path, 60); // URL valid for 60 seconds
+      
+      if (error) {
+        console.error("Error getting resume URL:", error);
+        return null;
+      }
+      
+      return data.signedUrl;
+    } catch (err) {
+      console.error("Error generating resume URL:", err);
+      return null;
+    }
+  };
+
+  const handleViewResume = async (e: React.MouseEvent, resumePath: string) => {
+    e.stopPropagation();
+    
+    try {
+      // Check if we already have a signed URL for this resume
+      if (resumeUrls[resumePath]) {
+        window.open(resumeUrls[resumePath], '_blank');
+        return;
+      }
+      
+      // Get a new signed URL
+      const signedUrl = await getResumeUrl(resumePath);
+      if (signedUrl) {
+        // Store the signed URL for future use
+        setResumeUrls(prev => ({
+          ...prev,
+          [resumePath]: signedUrl
+        }));
+        window.open(signedUrl, '_blank');
+      } else {
+        toast({
+          title: "Error",
+          description: "Unable to access the resume file.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error viewing resume:", error);
+      toast({
+        title: "Error",
+        description: "Failed to open the resume file.",
+        variant: "destructive",
+      });
+    }
+  };
 
   useEffect(() => {
     const fetchCandidates = async () => {
@@ -290,10 +353,7 @@ const Candidates: React.FC = () => {
                             size="sm"
                             variant="outline"
                             className="text-xs h-8"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              window.open(candidate.latestApplication.resume_url, '_blank');
-                            }}
+                            onClick={(e) => handleViewResume(e, candidate.latestApplication.resume_url)}
                           >
                             View Resume
                           </Button>
