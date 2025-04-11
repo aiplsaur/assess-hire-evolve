@@ -118,7 +118,7 @@ const Login: React.FC = () => {
             </Link>
           </div>
 
-          <div className="mt-6">
+          {/* <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-300"></div>
@@ -173,7 +173,7 @@ const Login: React.FC = () => {
                 This is a demo application. All authentication is simulated. Any password will work with the demo emails.
               </p>
             </div>
-          </div>
+          </div> */}
         </CardContent>
         <Separator />
         <CardFooter className="flex flex-col space-y-4 p-6">
