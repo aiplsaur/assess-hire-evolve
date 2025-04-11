@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { CalendarRange, MapPin, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO, isValid } from "date-fns";
+import { Link } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 
 interface Job {
   id: string;
@@ -71,13 +73,20 @@ export const RecentJobs: React.FC<RecentJobsProps> = ({
   jobs,
   className,
 }) => {
+  const { user } = useAuth();
+  const canCreateJob = user?.role === 'admin' || user?.role === 'hr';
+
   return (
     <Card className={cn("h-full", className)}>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-lg font-medium">Recent Jobs</CardTitle>
-        <Button variant="outline" size="sm">
-          Create New
-        </Button>
+        {canCreateJob && (
+          <Link to="/jobs/create">
+            <Button variant="outline" size="sm">
+              Create New
+            </Button>
+          </Link>
+        )}
       </CardHeader>
       <CardContent>
         {jobs.length === 0 ? (
@@ -128,20 +137,24 @@ export const RecentJobs: React.FC<RecentJobsProps> = ({
                   </div>
                 </div>
                 <div className="mt-3 flex justify-end space-x-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-xs h-7 px-2"
-                  >
-                    View Details
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-xs h-7 px-2"
-                  >
-                    View Applicants
-                  </Button>
+                  <Link to={`/jobs/${job.id}`}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs h-7 px-2"
+                    >
+                      View Details
+                    </Button>
+                  </Link>
+                  <Link to={`/jobs/${job.id}/applicants`}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs h-7 px-2"
+                    >
+                      View Applicants
+                    </Button>
+                  </Link>
                 </div>
               </div>
             ))}
