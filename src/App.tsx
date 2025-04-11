@@ -28,6 +28,7 @@ import JobEdit from "./pages/jobs/JobEdit";
 import JobApplicants from "./pages/jobs/JobApplicants";
 import CreateJob from "./pages/jobs/CreateJob";
 import JobDetails from "./pages/jobs/JobDetails";
+import JobApply from "./pages/jobs/JobApply";
 import CandidateDetails from "./pages/candidates/CandidateDetails";
 import ScheduleInterview from "./pages/interviews/ScheduleInterview";
 import EditCandidate from "./pages/candidates/EditCandidate";
@@ -79,6 +80,11 @@ const App = () => (
               <Route path="jobs/:jobId" element={
                 <RoleBasedGuard allowedRoles={["candidate", "hr", "admin", "interviewer"]}>
                   <JobDetails />
+                </RoleBasedGuard>
+              } />
+              <Route path="jobs/:jobId/apply" element={
+                <RoleBasedGuard allowedRoles={["candidate"]}>
+                  <JobApply />
                 </RoleBasedGuard>
               } />
               <Route path="jobs/:jobId/edit" element={
