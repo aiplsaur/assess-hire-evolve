@@ -2,14 +2,16 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Menu, Music } from "lucide-react";
+import { Menu, Music, Moon, Sun } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { UserMenu } from "./UserMenu";
 import { useAuth } from "@/context/AuthContext";
+import { useTheme } from "@/context/ThemeContext";
 
 export const Header: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { isDarkMode, toggleDarkMode } = useTheme();
 
   return (
     <header className="h-16 bg-white dark:bg-system-gray-800 shadow-sm z-50 flex items-center px-4 justify-between sticky top-0 left-0 right-0">
@@ -34,7 +36,21 @@ export const Header: React.FC = () => {
           </Badge>
         </div>
       </div>
-      {user && <UserMenu user={user} />}
+      <div className="flex items-center gap-2">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={toggleDarkMode}
+          className="hover:bg-system-blue-50 dark:hover:bg-system-blue-900/20"
+        >
+          {isDarkMode ? (
+            <Sun className="h-5 w-5" />
+          ) : (
+            <Moon className="h-5 w-5" />
+          )}
+        </Button>
+        {user && <UserMenu user={user} />}
+      </div>
     </header>
   );
 };

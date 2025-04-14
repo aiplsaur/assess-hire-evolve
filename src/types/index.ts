@@ -1,4 +1,3 @@
-
 // User Roles
 export type UserRole = 'admin' | 'hr' | 'interviewer' | 'candidate';
 
@@ -11,6 +10,7 @@ export interface UserProfile {
   lastName: string;
   avatar_url?: string;
   phone?: string;
+  location?: string;
   created_at: string;
   updated_at: string;
 }
