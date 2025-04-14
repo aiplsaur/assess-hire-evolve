@@ -975,7 +975,7 @@ export const assessmentService = {
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('id')
-        .eq('auth_id', userId)
+        .eq('id', userId)
         .single();
       
       if (profileError) {

@@ -366,7 +366,7 @@ const TakeAssessment: React.FC = () => {
   const question = assessment.questions[currentQuestion];
   
   return (
-    <div className="max-w-4xl mx-auto my-8 space-y-6">
+    <div className="mx-auto my-8 space-y-6">
       <div className="flex items-center justify-between">
         <Button 
           variant="outline" 
