@@ -86,9 +86,9 @@ export const RecentApplications: React.FC<RecentApplicationsProps> = ({
             {applications.map((application) => (
               <div
                 key={application.id}
-                className="flex items-start p-3 rounded-lg border border-border bg-background hover:bg-muted/50 transition-colors"
+                className="flex flex-col sm:flex-row items-start p-3 rounded-lg border border-border bg-background hover:bg-muted/50 transition-colors"
               >
-                <Avatar className="h-10 w-10 mr-3">
+                <Avatar className="h-10 w-10 mb-2 sm:mb-0 sm:mr-3">
                   <AvatarImage
                     src={application.profiles?.avatar_url}
                     alt={application.profiles ? `${application.profiles.first_name} ${application.profiles.last_name}` : "User"}
@@ -97,14 +97,14 @@ export const RecentApplications: React.FC<RecentApplicationsProps> = ({
                     {application.profiles ? getInitials(application.profiles.first_name, application.profiles.last_name) : "U"}
                   </AvatarFallback>
                 </Avatar>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-medium truncate">
+                <div className="flex-1 min-w-0 w-full">
+                  <div className="flex items-center justify-between flex-wrap gap-1">
+                    <h4 className="font-medium truncate max-w-[180px] sm:max-w-none">
                       {application.profiles ? `${application.profiles.first_name} ${application.profiles.last_name}` : "Unknown User"}
                     </h4>
                     <Badge
                       variant="outline"
-                      className={getStatusStyles(application.status)}
+                      className={cn("text-xs", getStatusStyles(application.status))}
                     >
                       {getStatusLabel(application.status)}
                     </Badge>
@@ -113,14 +113,14 @@ export const RecentApplications: React.FC<RecentApplicationsProps> = ({
                     {application.jobs?.title || 'Unknown Position'} {application.jobs?.department ? `• ${application.jobs.department}` : ''}
                   </p>
                   <div className="mt-1 flex items-center text-xs text-muted-foreground">
-                    Applied {application.applied_at ? format(parseISO(application.applied_at), "MMM d, yyyy") : "N/A"}
+                    <span className="flex-shrink-0">Applied</span> <span className="ml-1 truncate">{application.applied_at ? format(parseISO(application.applied_at), "MMM d, yyyy") : "N/A"}</span>
                   </div>
-                  <div className="mt-2 flex space-x-2">
+                  <div className="mt-2 flex flex-wrap gap-2">
                     <Link to={`/applications/${application.id}`}>
                       <Button
                         size="sm"
                         variant="outline"
-                        className="text-xs h-7 px-2"
+                        className="text-xs h-7 px-2 w-full sm:w-auto"
                       >
                         View Details
                       </Button>
@@ -128,7 +128,7 @@ export const RecentApplications: React.FC<RecentApplicationsProps> = ({
                     {application.status === "applied" && (
                       <Button
                         size="sm"
-                        className="text-xs h-7 px-2 bg-system-blue-500 hover:bg-system-blue-600"
+                        className="text-xs h-7 px-2 w-full sm:w-auto bg-system-blue-500 hover:bg-system-blue-600"
                       >
                         Start Review
                       </Button>

@@ -100,48 +100,48 @@ export const RecentJobs: React.FC<RecentJobsProps> = ({
                 key={job.id}
                 className="p-3 rounded-lg border border-border bg-background hover:bg-muted/50 transition-colors"
               >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h4 className="font-medium">{job.title}</h4>
-                    <p className="text-sm text-muted-foreground">
+                <div className="flex justify-between items-start flex-wrap gap-2">
+                  <div className="max-w-[60%] sm:max-w-[70%]">
+                    <h4 className="font-medium truncate">{job.title}</h4>
+                    <p className="text-sm text-muted-foreground truncate">
                       {job.department}
                     </p>
                   </div>
-                  <div className="flex space-x-2">
+                  <div className="flex flex-wrap gap-1 sm:gap-2">
                     <Badge
                       variant="outline"
-                      className={getJobTypeStyles(job.type)}
+                      className={cn("text-xs", getJobTypeStyles(job.type))}
                     >
                       {job.type.replace("-", " ")}
                     </Badge>
                     <Badge
                       variant="outline"
-                      className={getStatusStyles(job.status)}
+                      className={cn("text-xs", getStatusStyles(job.status))}
                     >
                       {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
                     </Badge>
                   </div>
                 </div>
-                <div className="mt-2 grid grid-cols-3 gap-2 text-xs text-muted-foreground">
+                <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-1 sm:gap-2 text-xs text-muted-foreground">
                   <div className="flex items-center">
-                    <MapPin className="h-3 w-3 mr-1" />
-                    {job.location}
+                    <MapPin className="h-3 w-3 mr-1 flex-shrink-0" />
+                    <span className="truncate">{job.location}</span>
                   </div>
                   <div className="flex items-center">
-                    <Users className="h-3 w-3 mr-1" />
+                    <Users className="h-3 w-3 mr-1 flex-shrink-0" />
                     {job.applicantsCount} applicants
                   </div>
                   <div className="flex items-center">
-                    <CalendarRange className="h-3 w-3 mr-1" />
+                    <CalendarRange className="h-3 w-3 mr-1 flex-shrink-0" />
                     {formatDate(job.created_at)}
                   </div>
                 </div>
-                <div className="mt-3 flex justify-end space-x-2">
+                <div className="mt-3 flex flex-wrap justify-end gap-2">
                   <Link to={`/jobs/${job.id}`}>
                     <Button
                       size="sm"
                       variant="outline"
-                      className="text-xs h-7 px-2"
+                      className="text-xs h-7 px-2 w-full sm:w-auto"
                     >
                       View Details
                     </Button>
@@ -150,7 +150,7 @@ export const RecentJobs: React.FC<RecentJobsProps> = ({
                     <Button
                       size="sm"
                       variant="outline"
-                      className="text-xs h-7 px-2"
+                      className="text-xs h-7 px-2 w-full sm:w-auto"
                     >
                       View Applicants
                     </Button>

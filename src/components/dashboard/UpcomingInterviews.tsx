@@ -192,9 +192,9 @@ export const UpcomingInterviews: React.FC<UpcomingInterviewsProps> = ({
               return (
                 <div
                   key={interview.id}
-                  className="flex items-start p-3 rounded-lg border border-border bg-background hover:bg-muted/50 transition-colors"
+                  className="flex flex-col sm:flex-row sm:items-start p-3 rounded-lg border border-border bg-background hover:bg-muted/50 transition-colors"
                 >
-                  <Avatar className="h-10 w-10 mr-3">
+                  <Avatar className="h-10 w-10 mb-2 sm:mb-0 sm:mr-3">
                     <AvatarImage
                       src={avatarUrl}
                       alt={candidateName}
@@ -204,13 +204,14 @@ export const UpcomingInterviews: React.FC<UpcomingInterviewsProps> = ({
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-medium truncate">
+                    <div className="flex items-center justify-between flex-wrap gap-1">
+                      <h4 className="font-medium truncate max-w-[180px] sm:max-w-none">
                         {candidateName}
                       </h4>
                       <Badge
                         variant="outline"
                         className={cn(
+                          "text-xs",
                           interview.type === "remote"
                             ? "bg-system-blue-100 text-system-blue-600 border-system-blue-200"
                             : "bg-system-green-100 text-system-green-600 border-system-green-200"
@@ -222,25 +223,25 @@ export const UpcomingInterviews: React.FC<UpcomingInterviewsProps> = ({
                     <p className="text-sm text-muted-foreground truncate">
                       {jobTitle}
                     </p>
-                    <div className="mt-2 flex flex-wrap gap-2">
+                    <div className="mt-2 flex flex-wrap gap-x-2 gap-y-1">
                       <div className="flex items-center text-xs text-muted-foreground">
-                        <Calendar className="h-3 w-3 mr-1" />
+                        <Calendar className="h-3 w-3 mr-1 flex-shrink-0" />
                         {format(scheduledDate, "MMM d, yyyy")}
                       </div>
                       <div className="flex items-center text-xs text-muted-foreground">
-                        <Clock className="h-3 w-3 mr-1" />
+                        <Clock className="h-3 w-3 mr-1 flex-shrink-0" />
                         {format(scheduledDate, "h:mm a")} ({duration} min)
                       </div>
                       {interview.type === "remote" && meetingLink ? (
                         <div className="flex items-center text-xs text-system-blue-600">
-                          <Video className="h-3 w-3 mr-1" />
+                          <Video className="h-3 w-3 mr-1 flex-shrink-0" />
                           Video Call
                         </div>
                       ) : (
                         interview.location && (
                           <div className="flex items-center text-xs text-muted-foreground">
-                            <MapPin className="h-3 w-3 mr-1" />
-                            {interview.location}
+                            <MapPin className="h-3 w-3 mr-1 flex-shrink-0" />
+                            <span className="truncate">{interview.location}</span>
                           </div>
                         )
                       )}

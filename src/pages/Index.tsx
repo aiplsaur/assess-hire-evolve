@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -16,7 +15,7 @@ const Index: React.FC = () => {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
               <h1 className="text-xl font-bold text-system-blue-600">
-                InterviewPro
+                AnthemHire
               </h1>
             </div>
             <nav className="hidden md:flex space-x-8">
@@ -51,7 +50,7 @@ const Index: React.FC = () => {
                 Simplify Your Hiring Process with AI-Powered Assessments
               </h1>
               <p className="mt-4 text-xl text-system-gray-600">
-                InterviewPro streamlines your recruitment workflow with skill-based assessments, 
+                AnthemHire streamlines your recruitment workflow with skill-based assessments, 
                 automated scoring, and intelligent candidate ranking.
               </p>
               <div className="mt-8 flex flex-col sm:flex-row sm:space-x-4 space-y-4 sm:space-y-0">
@@ -305,7 +304,7 @@ const Index: React.FC = () => {
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-system-gray-800">What Our Customers Say</h2>
             <p className="mt-4 text-xl text-system-gray-600 max-w-3xl mx-auto">
-              Companies of all sizes trust InterviewPro to streamline their hiring process.
+              Companies of all sizes trust AnthemHire to streamline their hiring process.
             </p>
           </div>
           
@@ -320,7 +319,7 @@ const Index: React.FC = () => {
                   </div>
                 </div>
                 <p className="text-system-gray-600 mb-4">
-                  "InterviewPro has transformed our hiring process. We've reduced our time-to-hire by 60% while making better quality hires."
+                  "AnthemHire has transformed our hiring process. We've reduced our time-to-hire by 60% while making better quality hires."
                 </p>
                 <div className="flex items-center">
                   <div className="w-10 h-10 bg-system-blue-100 rounded-full flex items-center justify-center mr-3">
@@ -390,7 +389,7 @@ const Index: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl font-bold text-white mb-4">Ready to Transform Your Hiring Process?</h2>
           <p className="text-xl text-system-blue-100 max-w-3xl mx-auto mb-8">
-            Join hundreds of companies that are making better hiring decisions faster with InterviewPro.
+            Join hundreds of companies that are making better hiring decisions faster with AnthemHire.
           </p>
           <div className="flex flex-col sm:flex-row justify-center sm:space-x-4 space-y-4 sm:space-y-0">
             <Button 
@@ -414,7 +413,7 @@ const Index: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
-              <h3 className="text-white text-lg font-semibold mb-4">InterviewPro</h3>
+              <h3 className="text-white text-lg font-semibold mb-4">AnthemHire</h3>
               <p className="text-system-gray-400">
                 The complete solution for modern recruitment and hiring.
               </p>
@@ -448,7 +447,7 @@ const Index: React.FC = () => {
             </div>
           </div>
           <div className="border-t border-system-gray-700 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
-            <p>© 2025 InterviewPro. All rights reserved.</p>
+            <p>© 2025 AnthemHire. All rights reserved.</p>
             <div className="flex space-x-6 mt-4 md:mt-0">
               <a href="#" className="hover:text-white">Twitter</a>
               <a href="#" className="hover:text-white">LinkedIn</a>

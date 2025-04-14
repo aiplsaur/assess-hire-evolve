@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { UserProfile } from "@/types";
 import {
   SidebarContent as SidebarContentUI,
@@ -20,6 +20,11 @@ import {
   Home,
   Settings,
   Users,
+  Music,
+  Briefcase,
+  LineChart,
+  GraduationCap,
+  Award,
 } from "lucide-react";
 
 interface SidebarContentProps {
@@ -28,35 +33,40 @@ interface SidebarContentProps {
 
 export const SidebarContentComponent: React.FC<SidebarContentProps> = ({ user }) => {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const adminMenuItems = [
     { title: "Dashboard", icon: Home, url: "/dashboard" },
-    { title: "Jobs", icon: Building2, url: "/jobs" },
+    { title: "Jobs", icon: Briefcase, url: "/jobs" },
     { title: "Candidates", icon: Users, url: "/candidates" },
-    { title: "Assessments", icon: ClipboardList, url: "/assessments" },
+    { title: "Assessments", icon: Award, url: "/assessments" },
     { title: "Interviews", icon: Calendar, url: "/interviews" },
-    { title: "Reports", icon: FileSpreadsheet, url: "/reports" },
+    { title: "Reports", icon: LineChart, url: "/reports" },
     { title: "Settings", icon: Settings, url: "/settings" },
   ];
 
   const hrMenuItems = [
     { title: "Dashboard", icon: Home, url: "/dashboard" },
-    { title: "Jobs", icon: Building2, url: "/jobs" },
+    { title: "Jobs", icon: Briefcase, url: "/jobs" },
     { title: "Candidates", icon: Users, url: "/candidates" },
+    { title: "Assessments", icon: Award, url: "/assessments" },
     { title: "Interviews", icon: Calendar, url: "/interviews" },
+    { title: "Settings", icon: Settings, url: "/settings" },
   ];
 
   const interviewerMenuItems = [
     { title: "Dashboard", icon: Home, url: "/dashboard" },
     { title: "My Interviews", icon: Calendar, url: "/interviews" },
-    { title: "Assessments", icon: ClipboardList, url: "/assessments" },
+    { title: "Assessments", icon: Award, url: "/assessments" },
+    { title: "Settings", icon: Settings, url: "/settings" },
   ];
 
   const candidateMenuItems = [
     { title: "Dashboard", icon: Home, url: "/dashboard" },
     { title: "My Applications", icon: ClipboardList, url: "/applications" },
-    { title: "Assessments", icon: FileSpreadsheet, url: "/assessments" },
-    { title: "Job Listings", icon: Building2, url: "/jobs" },
+    { title: "Assessments", icon: Award, url: "/assessments" },
+    { title: "Job Listings", icon: Briefcase, url: "/jobs" },
+    { title: "Settings", icon: Settings, url: "/settings" },
   ];
 
   const menuItems = () => {
@@ -75,6 +85,11 @@ export const SidebarContentComponent: React.FC<SidebarContentProps> = ({ user })
     }
   };
 
+  // Check if current path matches a menu item
+  const isActive = (url: string) => {
+    return location.pathname === url || location.pathname.startsWith(`${url}/`);
+  };
+
   return (
     <>
       <SidebarContentUI>
@@ -85,9 +100,24 @@ export const SidebarContentComponent: React.FC<SidebarContentProps> = ({ user })
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     onClick={() => navigate(item.url)}
+                    className={cn(
+                      isActive(item.url) ? 
+                        "bg-system-blue-50 text-system-blue-600 dark:bg-system-blue-900/20 dark:text-system-blue-400" : 
+                        "hover:bg-gray-50 dark:hover:bg-gray-800"
+                    )}
                   >
-                    <item.icon className="h-5 w-5" />
+                    <item.icon className={cn(
+                      "h-5 w-5 mr-3",
+                      isActive(item.url) ? 
+                        "text-system-blue-600 dark:text-system-blue-400" : 
+                        "text-gray-500 dark:text-gray-400"
+                    )} />
                     <span>{item.title}</span>
+                    {item.title === "Assessments" && user?.role === "candidate" && (
+                      <Badge className="ml-auto bg-system-blue-100 text-system-blue-600 dark:bg-system-blue-900/30 dark:text-system-blue-400">
+                        New
+                      </Badge>
+                    )}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -103,28 +133,42 @@ export const SidebarHeader: React.FC<{user?: UserProfile}> = ({ user }) => {
   if (!user) return null;
   
   return (
-    <div>
-      <Badge 
-        variant="secondary" 
-        className={cn(
-          "capitalize", 
-          user.role === "admin" ? "bg-system-blue-100 text-system-blue-600" :
-          user.role === "hr" ? "bg-system-green-100 text-system-green-600" :
-          user.role === "interviewer" ? "bg-system-yellow-100 text-system-yellow-500" :
-          "bg-system-gray-200 text-system-gray-600"
+    <div className="px-3 py-3">
+      <div className="flex items-center gap-3 mb-2">
+        {user.avatar_url ? (
+          <img src={user.avatar_url} alt={user.firstName} className="w-9 h-9 rounded-full" />
+        ) : (
+          <div className="w-9 h-9 rounded-full bg-system-blue-100 dark:bg-system-blue-900/30 flex items-center justify-center">
+            <span className="text-system-blue-600 dark:text-system-blue-400 font-medium">
+              {user.firstName && user.firstName[0]}
+              {user.lastName && user.lastName[0]}
+            </span>
+          </div>
         )}
-      >
-        {user.role}
-      </Badge>
+        <div>
+          <p className="font-medium">{user.firstName} {user.lastName}</p>
+          <Badge 
+            variant="secondary" 
+            className={cn(
+              "capitalize text-xs", 
+              user.role === "admin" ? "bg-system-blue-100 text-system-blue-600 dark:bg-system-blue-900/30 dark:text-system-blue-400" :
+              user.role === "hr" ? "bg-system-green-100 text-system-green-600 dark:bg-system-green-900/30 dark:text-system-green-400" :
+              user.role === "interviewer" ? "bg-system-yellow-100 text-system-yellow-500 dark:bg-system-yellow-900/30 dark:text-system-yellow-400" :
+              "bg-system-gray-200 text-system-gray-600 dark:bg-system-gray-700 dark:text-system-gray-300"
+            )}
+          >
+            {user.role}
+          </Badge>
+        </div>
+      </div>
     </div>
   );
 };
 
 export const SidebarFooterContent: React.FC = () => {
   return (
-    <div className="text-xs text-muted-foreground">
-      <p>© 2025 InterviewPro</p>
-      <p>Version 1.0.0</p>
+    <div className="px-4 py-4 text-xs text-muted-foreground border-t border-border">
+      <p>© 2025 AnthemHire</p>
     </div>
   );
 };

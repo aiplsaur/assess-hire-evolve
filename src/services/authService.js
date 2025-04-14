@@ -79,7 +79,7 @@ const fallbackToMockUser = (
 
   toast({
     title: "Account created successfully (Demo Mode)",
-    description: `Welcome to InterviewPro, ${firstName}!`,
+    description: `Welcome to AnthemHire, ${firstName}!`,
     variant: "destructive",
   });
 
@@ -386,7 +386,7 @@ export const authService = {
 
       toast({
         title: "Account created successfully",
-        description: `Welcome to InterviewPro, ${firstName}!`,
+        description: `Welcome to AnthemHire, ${firstName}!`,
       });
 
       return { user: userProfile, success: true };

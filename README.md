@@ -1,7 +1,6 @@
+# AnthemHire - Advanced Interview Assessment Management System
 
-# InterviewPro - Advanced Interview Assessment Management System
-
-InterviewPro is a comprehensive platform for managing the entire hiring process, from job postings to final candidate selection.
+AnthemHire is a comprehensive platform for managing the entire hiring process, from job postings to final candidate selection.
 
 ## Table of Contents
 
@@ -18,7 +17,7 @@ InterviewPro is a comprehensive platform for managing the entire hiring process,
 
 ## Overview
 
-InterviewPro streamlines the recruitment workflow with skill-based assessments, automated scoring, and intelligent candidate ranking. It supports role-based access for Administrators, HR Managers, Interviewers, and Candidates.
+AnthemHire streamlines the recruitment workflow with skill-based assessments, automated scoring, and intelligent candidate ranking. It supports role-based access for Administrators, HR Managers, Interviewers, and Candidates, providing each user type with a tailored experience.
 
 ## Features
 

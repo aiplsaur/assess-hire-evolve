@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Outlet } from "react-router-dom";
 import {
@@ -18,9 +17,9 @@ export const MainLayout: React.FC = () => {
     <SidebarProvider>
       <div className="min-h-screen flex flex-col w-full bg-system-gray-100 dark:bg-system-gray-800">
         <Header />
-        <div className="flex flex-1">
+        <div className="flex flex-1 mt-4">
           <Sidebar className="border-r border-system-gray-200 dark:border-system-gray-700 bg-white dark:bg-system-gray-800">
-            <SidebarHeader className="p-4">
+            <SidebarHeader className="p-4 md:mt-16 border-b border-system-gray-200 dark:border-system-gray-700">
               <SidebarHeaderContent user={user} />
             </SidebarHeader>
             <SidebarContentComponent user={user} />

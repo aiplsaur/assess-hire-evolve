@@ -156,7 +156,7 @@ const Register: React.FC = () => {
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">Create an Account</CardTitle>
           <CardDescription className="text-center">
-            Join InterviewPro to streamline your hiring process
+            Join AnthemHire to streamline your hiring process
           </CardDescription>
         </CardHeader>
         <CardContent>

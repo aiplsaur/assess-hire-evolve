@@ -127,7 +127,7 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <StatCard
           title="Open Positions"
           value={openPositions}
@@ -158,14 +158,14 @@ const AdminDashboard: React.FC = () => {
         />
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mt-4 sm:mt-6">
         <RecentJobs jobs={jobs.slice(0, 5)} />
         <UpcomingInterviews interviews={interviews.filter(i => 
           i.status === 'scheduled' || i.status === 'rescheduled'
         ).slice(0, 5)} />
       </div>
       
-      <div>
+      <div className="mt-4 sm:mt-6">
         <RecentApplications applications={applications.slice(0, 5)} />
       </div>
     </>
@@ -230,7 +230,7 @@ const HRDashboard: React.FC = () => {
 
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <StatCard
           title="Open Positions"
           value={openPositions}
@@ -261,13 +261,12 @@ const HRDashboard: React.FC = () => {
         />
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mt-4 sm:mt-6">
         <RecentApplications applications={applications.slice(0, 5)} />
         <UpcomingInterviews interviews={interviews.filter(i => 
           i.status === 'scheduled' || i.status === 'rescheduled'
         ).slice(0, 5)} />
       </div>
-
     </>
   );
 };
@@ -328,7 +327,7 @@ const InterviewerDashboard: React.FC = () => {
 
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
         <StatCard
           title="My Interviews"
           value={weeklyInterviews}
@@ -352,7 +351,7 @@ const InterviewerDashboard: React.FC = () => {
         />
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mt-4 sm:mt-6">
         <UpcomingInterviews interviews={interviews.filter(i => 
           i.status === 'scheduled' || i.status === 'rescheduled'
         ).slice(0, 5)} />
@@ -422,7 +421,7 @@ const CandidateDashboard: React.FC = () => {
 
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
         <StatCard
           title="Active Applications"
           value={activeApplications}
@@ -446,29 +445,29 @@ const CandidateDashboard: React.FC = () => {
         />
       </div>
       
-      <div className="p-4 mt-4 mb-8 bg-system-blue-50 border border-system-blue-100 rounded-md">
+      <div className="p-3 sm:p-4 mt-4 sm:mt-6 mb-6 sm:mb-8 bg-system-blue-50 border border-system-blue-100 rounded-md">
         <h2 className="text-lg font-medium text-system-blue-700 mb-2">Ready for your next challenge?</h2>
         <p className="text-system-blue-600 mb-4">
           We have more than {applications.length} open positions that match your profile.
         </p>
-        <button className="bg-system-blue-600 hover:bg-system-blue-700 text-white px-4 py-2 rounded-md transition-colors">
+        <button className="bg-system-blue-600 hover:bg-system-blue-700 text-white px-3 sm:px-4 py-2 rounded-md transition-colors text-sm sm:text-base">
           Browse Jobs
         </button>
       </div>
       
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         <h2 className="text-xl font-semibold">Recent Activity</h2>
         
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {applications.slice(0, 3).map((app) => (
-            <div key={app.id} className="p-4 bg-white border border-border rounded-md shadow-sm">
-              <div className="flex items-center">
-                <div className="w-10 h-10 rounded-full bg-system-blue-100 flex items-center justify-center mr-4">
+            <div key={app.id} className="p-3 sm:p-4 bg-white border border-border rounded-md shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                <div className="w-10 h-10 rounded-full bg-system-blue-100 flex items-center justify-center">
                   <Building2 className="h-5 w-5 text-system-blue-600" />
                 </div>
                 <div>
                   <h3 className="font-medium">Application {app.status.charAt(0).toUpperCase() + app.status.slice(1)}</h3>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground truncate max-w-[250px] sm:max-w-none">
                     {app.jobs?.title || 'Job Position'}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
