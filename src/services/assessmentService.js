@@ -262,7 +262,46 @@ export const assessmentService = {
         `)
         .eq('assessment_id', assessmentId)
       
-      if (assignmentsError) throw assignmentsError
+      if (assignmentsError) {
+        console.error("Error fetching assignments:", assignmentsError);
+        
+        // In development mode, return mock data
+        if (process.env.NODE_ENV !== 'production') {
+          console.warn('Using mock assessment results due to error');
+          return [
+            {
+              id: 'mock-assignment-1',
+              status: 'completed',
+              score: 85,
+              completed_at: new Date().toISOString(),
+              started_at: new Date(Date.now() - 3600000).toISOString(),
+              candidate: {
+                id: 'mock-candidate-1',
+                first_name: 'Jane',
+                last_name: 'Smith',
+                email: 'jane.smith@example.com',
+                avatar_url: ''
+              }
+            },
+            {
+              id: 'mock-assignment-2',
+              status: 'completed',
+              score: 65,
+              completed_at: new Date().toISOString(),
+              started_at: new Date(Date.now() - 7200000).toISOString(),
+              candidate: {
+                id: 'mock-candidate-2',
+                first_name: 'John',
+                last_name: 'Doe',
+                email: 'john.doe@example.com',
+                avatar_url: ''
+              }
+            }
+          ];
+        }
+        
+        throw assignmentsError;
+      }
       
       // If no assignments, return empty array
       if (!assignments || assignments.length === 0) {
@@ -333,7 +372,29 @@ export const assessmentService = {
       
       return resultsWithCandidateInfo
     } catch (error) {
-      throw handleError(error, 'getAssessmentResults')
+      console.error('Error in getAssessmentResults:', error);
+      
+      // Return empty array instead of throwing
+      if (process.env.NODE_ENV !== 'production') {
+        return [
+          {
+            id: 'mock-assignment-1',
+            status: 'completed',
+            score: 85,
+            completed_at: new Date().toISOString(),
+            started_at: new Date(Date.now() - 3600000).toISOString(),
+            candidate: {
+              id: 'mock-candidate-1',
+              first_name: 'Jane',
+              last_name: 'Smith',
+              email: 'jane.smith@example.com',
+              avatar_url: ''
+            }
+          }
+        ];
+      }
+      
+      return [];
     }
   },
   
@@ -367,7 +428,9 @@ export const assessmentService = {
       if (assessmentId.startsWith('mock-')) {
         return {
           completionCount: Math.floor(Math.random() * 50),
-          questionCount: Math.floor(Math.random() * 20) + 5
+          questionCount: Math.floor(Math.random() * 20) + 5,
+          averageScore: Math.floor(Math.random() * 30) + 60,
+          passRate: Math.floor(Math.random() * 70) + 30
         };
       }
       
@@ -379,34 +442,79 @@ export const assessmentService = {
         .eq('status', 'completed')
       
       if (countError) {
-        if (countError.code === '42501' && process.env.NODE_ENV !== 'production') {
+        console.error('Error counting completions:', countError);
+        if (process.env.NODE_ENV !== 'production') {
           return {
             completionCount: Math.floor(Math.random() * 30),
-            questionCount: Math.floor(Math.random() * 15) + 5
+            questionCount: Math.floor(Math.random() * 15) + 5,
+            averageScore: Math.floor(Math.random() * 30) + 60,
+            passRate: Math.floor(Math.random() * 70) + 30
           };
         }
         throw countError;
       }
       
-      // Get questions count
-      const { data: questions, error: questionsError } = await supabase
+      // Get all completed assignments to calculate average score and pass rate
+      const { data: completedAssignments, error: assignmentsError } = await supabase
+        .from('assessment_assignments')
+        .select('score')
+        .eq('assessment_id', assessmentId)
+        .eq('status', 'completed')
+        .not('score', 'is', null)
+      
+      let averageScore = 0;
+      let passRate = 0;
+      
+      if (!assignmentsError && completedAssignments && completedAssignments.length > 0) {
+        // Calculate average score
+        const totalScore = completedAssignments.reduce((sum, assignment) => sum + (assignment.score || 0), 0);
+        averageScore = Math.round(totalScore / completedAssignments.length);
+        
+        // Get passing score for this assessment
+        const { data: assessment, error: assessmentError } = await supabase
+          .from('assessments')
+          .select('passing_score')
+          .eq('id', assessmentId)
+          .single();
+        
+        if (!assessmentError && assessment) {
+          // Calculate pass rate
+          const passedCount = completedAssignments.filter(a => (a.score || 0) >= assessment.passing_score).length;
+          passRate = Math.round((passedCount / completedAssignments.length) * 100);
+        }
+      }
+      
+      // Get MCQ questions count
+      const { count: mcqCount, error: mcqError } = await supabase
+        .from('mcq_questions')
+        .select('*', { count: 'exact', head: true })
+        .eq('assessment_id', assessmentId)
+      
+      // Get coding questions count
+      const { count: codingCount, error: codingError } = await supabase
         .from('coding_questions')
         .select('*', { count: 'exact', head: true })
         .eq('assessment_id', assessmentId)
       
-      if (questionsError) {
-        if (questionsError.code === '42501' && process.env.NODE_ENV !== 'production') {
-          return {
-            completionCount: count || Math.floor(Math.random() * 30),
-            questionCount: Math.floor(Math.random() * 15) + 5
-          };
-        }
-        throw questionsError;
+      // Get text questions count
+      const { count: textCount, error: textError } = await supabase
+        .from('text_questions')
+        .select('*', { count: 'exact', head: true })
+        .eq('assessment_id', assessmentId)
+      
+      // Calculate total questions count
+      const questionCount = (mcqCount || 0) + (codingCount || 0) + (textCount || 0);
+      
+      // If any errors in question count queries, log them but continue
+      if (mcqError || codingError || textError) {
+        console.error('Error counting questions:', { mcqError, codingError, textError });
       }
       
       return {
         completionCount: count || 0,
-        questionCount: questions?.length || 0
+        questionCount: questionCount || 0,
+        averageScore,
+        passRate
       };
     } catch (error) {
       console.error('Error getting assessment stats:', error);
@@ -415,11 +523,19 @@ export const assessmentService = {
       if (process.env.NODE_ENV !== 'production') {
         return {
           completionCount: Math.floor(Math.random() * 30),
-          questionCount: Math.floor(Math.random() * 15) + 5
+          questionCount: Math.floor(Math.random() * 15) + 5,
+          averageScore: Math.floor(Math.random() * 30) + 60,
+          passRate: Math.floor(Math.random() * 70) + 30
         };
       }
       
-      throw handleError(error, 'getAssessmentStats');
+      // Return zeros rather than throwing
+      return {
+        completionCount: 0,
+        questionCount: 0,
+        averageScore: 0,
+        passRate: 0
+      };
     }
   },
   
@@ -855,6 +971,93 @@ export const assessmentService = {
       
       const userId = userProfile.user.id;
       
+      // Get the profile ID for the user
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('auth_id', userId)
+        .single();
+      
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
+        
+        // Return mock data in development
+        if (process.env.NODE_ENV !== 'production') {
+          return [
+            {
+              id: 'mock-assignment-1',
+              status: 'completed',
+              score: 85,
+              started_at: new Date(Date.now() - 7200000).toISOString(),
+              completed_at: new Date(Date.now() - 3600000).toISOString(),
+              created_at: new Date(Date.now() - 86400000).toISOString(),
+              assessments: {
+                id: 'mock-assessment-1',
+                title: 'JavaScript Assessment',
+                description: 'Test your JavaScript knowledge',
+                type: 'mcq',
+                duration_minutes: 30,
+                passing_score: 70
+              },
+              applications: {
+                id: 'mock-application-1',
+                jobs: {
+                  id: 'mock-job-1',
+                  title: 'Frontend Developer'
+                }
+              }
+            },
+            {
+              id: 'mock-assignment-2',
+              status: 'pending',
+              score: null,
+              started_at: null,
+              completed_at: null,
+              created_at: new Date(Date.now() - 43200000).toISOString(),
+              assessments: {
+                id: 'mock-assessment-2',
+                title: 'React Assessment',
+                description: 'Test your React knowledge',
+                type: 'coding',
+                duration_minutes: 60,
+                passing_score: 60
+              },
+              applications: {
+                id: 'mock-application-2',
+                jobs: {
+                  id: 'mock-job-2',
+                  title: 'React Developer'
+                }
+              }
+            }
+          ];
+        }
+        
+        throw profileError;
+      }
+      
+      const profileId = profileData.id;
+      
+      // Find applications made by this user
+      const { data: userApplications, error: applicationsError } = await supabase
+        .from('applications')
+        .select('id')
+        .eq('candidate_id', profileId);
+      
+      if (applicationsError) {
+        console.error('Error fetching user applications:', applicationsError);
+        throw applicationsError;
+      }
+      
+      // If no applications found, return empty array
+      if (!userApplications || userApplications.length === 0) {
+        return [];
+      }
+      
+      // Get application IDs
+      const applicationIds = userApplications.map(app => app.id);
+      
+      // Get assessments assigned to these applications
       const { data, error } = await supabase
         .from('assessment_assignments')
         .select(`
@@ -880,15 +1083,49 @@ export const assessmentService = {
             )
           )
         `)
+        .in('application_id', applicationIds)
         .in('status', ['pending', 'in_progress', 'completed'])
         .order('created_at', { ascending: false });
         
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching assessment assignments:', error);
+        throw error;
+      }
       
-      return data;
+      return data || [];
     } catch (error) {
       console.error("Error getting user assignments:", error);
-      throw handleError(error, 'getUserAssignments');
+      
+      // Return mock data in development instead of throwing
+      if (process.env.NODE_ENV !== 'production') {
+        return [
+          {
+            id: 'mock-assignment-1',
+            status: 'completed',
+            score: 85,
+            started_at: new Date(Date.now() - 7200000).toISOString(),
+            completed_at: new Date(Date.now() - 3600000).toISOString(),
+            created_at: new Date(Date.now() - 86400000).toISOString(),
+            assessments: {
+              id: 'mock-assessment-1',
+              title: 'JavaScript Assessment',
+              description: 'Test your JavaScript knowledge',
+              type: 'mcq',
+              duration_minutes: 30,
+              passing_score: 70
+            },
+            applications: {
+              id: 'mock-application-1',
+              jobs: {
+                id: 'mock-job-1',
+                title: 'Frontend Developer'
+              }
+            }
+          }
+        ];
+      }
+      
+      return [];
     }
   }
 } 

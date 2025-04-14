@@ -401,7 +401,7 @@ const Index: React.FC = () => {
             </Button>
             <Button 
               variant="outline" 
-              className="border-white text-white hover:bg-system-blue-700 text-lg h-12 px-6"
+              className="border-white text-white bg-system-blue-700 text-lg h-12 px-6"
             >
               Request Demo
             </Button>
